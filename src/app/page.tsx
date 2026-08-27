@@ -1,65 +1,155 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { AppShell } from "@/components/layout/app-shell";
+import { MetricCard } from "@/components/ui/metric-card";
+import { SectionCard, InsightPill } from "@/components/ui/section-card";
+import { TrendChart } from "@/components/ui/charts";
+import {
+  ErrorState,
+  LoadingState,
+  useRangeFetch,
+} from "@/components/hooks/use-range-fetch";
+import { formatNumber } from "@/lib/metrics/periods";
+import type { MetricDelta } from "@/lib/metrics/periods";
+import { format } from "date-fns";
+
+type OverviewData = {
+  totals: {
+    followers: number;
+    impressions: number;
+    reach: number;
+    engagement: number;
+    clicks: number;
+    newFollowers: number;
+    avgEngagementRate: number;
+    websiteUsers: number;
+    websiteSessions: number;
+    deltas: Record<string, MetricDelta>;
+  };
+  bestPlatform?: { platform: string; engagementRate: number };
+  bestLinkedIn?: { name: string; engagementRate: number; impressions: number };
+  topPost?: {
+    title: string | null;
+    platform: string;
+    channelName: string;
+    engagement: number;
+    publishedAt: string;
+  };
+  trend: { month: string; impressions: number; engagement: number }[];
+};
+
+export default function OverviewPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <AppShell
+      title="Executive Overview"
+      subtitle="Cross-channel performance for NETS International Marketing"
+    >
+      <OverviewContent />
+    </AppShell>
+  );
+}
+
+function OverviewContent() {
+  const { data, loading, error } = useRangeFetch<OverviewData>("/api/overview");
+
+  if (loading) return <LoadingState />;
+  if (error || !data) return <ErrorState message={error ?? "No data"} />;
+
+  const t = data.totals;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricCard label="Total Followers" value={t.followers} delta={t.deltas.followers} compact />
+        <MetricCard label="Impressions" value={t.impressions} delta={t.deltas.impressions} compact />
+        <MetricCard label="Reach" value={t.reach} delta={t.deltas.reach} compact />
+        <MetricCard label="Engagement" value={t.engagement} delta={t.deltas.engagement} compact />
+        <MetricCard label="Total Clicks" value={t.clicks} delta={t.deltas.clicks} compact />
+        <MetricCard label="New Followers" value={t.newFollowers} delta={t.deltas.newFollowers} />
+        <MetricCard
+          label="Avg Engagement Rate"
+          value={t.avgEngagementRate}
+          delta={t.deltas.avgEngagementRate}
+          format="percent"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <MetricCard
+          label="Website Users"
+          value={t.websiteUsers}
+          delta={t.deltas.websiteUsers}
+          compact
+        />
+        <MetricCard
+          label="Sessions"
+          value={t.websiteSessions}
+          delta={t.deltas.websiteSessions}
+          compact
+        />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <InsightPill
+          label="Best-performing platform"
+          value={
+            data.bestPlatform
+              ? `${data.bestPlatform.platform} (${data.bestPlatform.engagementRate}% ER)`
+              : "—"
+          }
+        />
+        <InsightPill
+          label="Best LinkedIn page"
+          value={
+            data.bestLinkedIn
+              ? `${data.bestLinkedIn.name} (${data.bestLinkedIn.engagementRate}% ER)`
+              : "—"
+          }
+        />
+        <InsightPill
+          label="Top post this period"
+          value={
+            data.topPost
+              ? `${data.topPost.channelName} · ${formatNumber(data.topPost.engagement, true)} eng.`
+              : "—"
+          }
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <SectionCard
+            title="LinkedIn trend"
+            subtitle="Monthly impressions & engagement across all company pages"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <TrendChart
+              data={data.trend}
+              xKey="month"
+              series={[
+                { key: "impressions", color: "#0b1f3a", name: "Impressions" },
+                { key: "engagement", color: "#0d9488", name: "Engagement" },
+              ]}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </SectionCard>
         </div>
-      </main>
+        <div className="lg:col-span-2">
+          <SectionCard title="Top post highlight" subtitle="Highest engagement in selected period">
+            {data.topPost ? (
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold tracking-wide text-teal-600 uppercase">
+                  {data.topPost.platform} · {data.topPost.channelName}
+                </p>
+                <p className="font-display text-xl text-navy-900 leading-snug">
+                  {data.topPost.title}
+                </p>
+                <p className="text-sm text-muted">
+                  {format(new Date(data.topPost.publishedAt), "MMM d, yyyy")} ·{" "}
+                  {formatNumber(data.topPost.engagement)} total engagement
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted">No posts in this period.</p>
+            )}
+          </SectionCard>
+        </div>
+      </div>
     </div>
   );
 }

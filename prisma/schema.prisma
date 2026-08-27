@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Platform {
+  LINKEDIN
+  FACEBOOK
+  INSTAGRAM
+  YOUTUBE
+  WEBSITE
+}
+
+enum SyncStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model Channel {
+  id          String   @id @default(cuid())
+  platform    Platform
+  name        String
+  handle      String?
+  externalId  String?
+  /// Page / profile URL for reference
+  pageUrl     String?
+  /// Per-page access token (LinkedIn / Meta). Prefer this over global .env when set.
+  accessToken String?
+  /// API key when needed (YouTube). Optional if accessToken is used.
+  apiKey      String?
+  /// Extra notes for the marketing team (who owns the page, etc.)
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  snapshots MetricSnapshot[]
+  posts     Post[]
+
+  @@unique([platform, name])
+  @@index([platform])
+}
+
+model MetricSnapshot {
+  id             String   @id @default(cuid())
+  channelId      String
+  syncedAt       DateTime @default(now())
+  periodStart    DateTime
+  periodEnd      DateTime
+  followers      Int      @default(0)
+  newFollowers   Int      @default(0)
+  impressions    Int      @default(0)
+  reach          Int      @default(0)
+  engagement     Int      @default(0)
+  likes          Int      @default(0)
+  comments       Int      @default(0)
+  shares         Int      @default(0)
+  clicks         Int      @default(0)
+  saves          Int      @default(0)
+  profileVisits  Int      @default(0)
+  videoViews     Int      @default(0)
+  watchTimeMin   Float    @default(0)
+  avgViewDurSec  Float    @default(0)
+  returningViewers Int    @default(0)
+  ctr            Float    @default(0)
+  engagementRate Float    @default(0)
+  postCount      Int      @default(0)
+  // Platform-specific extras as JSON string when needed
+  extras         String?
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, periodStart, periodEnd])
+  @@index([syncedAt])
+}
+
+model Post {
+  id           String   @id @default(cuid())
+  channelId    String
+  platform     Platform
+  externalId   String?
+  title        String?
+  content      String?
+  thumbnailUrl String?
+  permalink    String?
+  publishedAt  DateTime
+  postType     String?  // post, reel, story, video, short
+  createdAt    DateTime @default(now())
+
+  channel Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  metrics PostMetrics[]
+
+  @@index([platform, publishedAt])
+  @@index([channelId])
+}
+
+model PostMetrics {
+  id             String   @id @default(cuid())
+  postId         String
+  syncedAt       DateTime @default(now())
+  periodStart    DateTime
+  periodEnd      DateTime
+  likes          Int      @default(0)
+  comments       Int      @default(0)
+  shares         Int      @default(0)
+  impressions    Int      @default(0)
+  reach          Int      @default(0)
+  clicks         Int      @default(0)
+  saves          Int      @default(0)
+  views          Int      @default(0)
+  engagementRate Float    @default(0)
+  ctr            Float    @default(0)
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, periodStart, periodEnd])
+}
+
+model WebsiteSnapshot {
+  id                   String   @id @default(cuid())
+  syncedAt             DateTime @default(now())
+  periodStart          DateTime
+  periodEnd            DateTime
+  users                Int      @default(0)
+  sessions             Int      @default(0)
+  newUsers             Int      @default(0)
+  bounceRate           Float    @default(0)
+  avgSessionDurationSec Float   @default(0)
+  conversions          Int      @default(0)
+  goalCompletions      Int      @default(0)
+  // JSON arrays: [{source, users, sessions}], [{page, sessions, bounceRate}]
+  trafficSources       String?
+  topLandingPages      String?
+
+  @@index([periodStart, periodEnd])
+}
+
+model SyncRun {
+  id         String     @id @default(cuid())
+  platform   Platform
+  status     SyncStatus @default(PENDING)
+  startedAt  DateTime   @default(now())
+  finishedAt DateTime?
+  message    String?
+  error      String?
+  recordsUpserted Int   @default(0)
+}

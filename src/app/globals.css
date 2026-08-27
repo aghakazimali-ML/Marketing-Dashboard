@@ -1,26 +1,150 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --navy-950: #06101f;
+  --navy-900: #0b1f3a;
+  --navy-800: #122a4a;
+  --navy-700: #1a3a63;
+  --teal-600: #0f766e;
+  --teal-500: #0d9488;
+  --teal-400: #2dd4bf;
+  --lime: #a3d133;
+  --forest: #1e7e34;
+  --electric: #00e5c0;
+  --sand-50: #eef8f2;
+  --sand-100: #dceee6;
+  --ink: #0a1628;
+  --muted: #4a6478;
+  --line: #c5ddd2;
+  --up: #047857;
+  --down: #b91c1c;
+  --card: rgba(255, 255, 255, 0.88);
+  --sidebar: #061820;
+  --background: #e8f5ef;
+  --foreground: var(--ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-navy-950: var(--navy-950);
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-teal-600: var(--teal-600);
+  --color-teal-500: var(--teal-500);
+  --color-teal-400: var(--teal-400);
+  --color-sand-50: var(--sand-50);
+  --color-sand-100: var(--sand-100);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --color-card: var(--card);
+  --color-sidebar: var(--sidebar);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-fraunces);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-dm-sans), "Segoe UI", sans-serif;
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
+
+/*
+  Fixed full-viewport stage — scrolls cleanly (no background-attachment: fixed,
+  no giant moving blur layers that smear while scrolling).
+*/
+.app-stage {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background: #eaf7f0;
+}
+
+.app-stage::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 90% 70% at 8% 12%, rgba(163, 209, 51, 0.42), transparent 58%),
+    radial-gradient(ellipse 80% 60% at 92% 8%, rgba(0, 229, 192, 0.32), transparent 52%),
+    radial-gradient(ellipse 70% 55% at 88% 88%, rgba(255, 176, 32, 0.28), transparent 55%),
+    radial-gradient(ellipse 65% 50% at 6% 85%, rgba(56, 189, 248, 0.28), transparent 52%),
+    radial-gradient(ellipse 55% 45% at 48% 48%, rgba(30, 126, 52, 0.12), transparent 62%),
+    linear-gradient(155deg, #d8f6e6 0%, #eaf8ff 40%, #fff6e8 72%, #e9ffe8 100%);
+}
+
+.app-stage::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(
+    rgba(14, 90, 70, 0.07) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+
+.app-stage > * {
+  position: relative;
+  z-index: 1;
+}
+
+.glass-header {
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.86) 0%,
+    rgba(230, 255, 240, 0.82) 50%,
+    rgba(232, 248, 255, 0.84) 100%
+  );
+  border-bottom: 1px solid rgba(30, 126, 52, 0.12);
+  box-shadow: 0 8px 28px rgba(6, 24, 32, 0.05);
+}
+
+.crazy-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 10px 32px rgba(6, 40, 30, 0.07);
+}
+
+.sidebar-glow {
+  box-shadow:
+    4px 0 36px rgba(163, 209, 51, 0.22),
+    inset -1px 0 0 rgba(163, 209, 51, 0.3);
+  background:
+    radial-gradient(ellipse 120% 40% at 0% 0%, rgba(163, 209, 51, 0.32), transparent 55%),
+    radial-gradient(ellipse 100% 50% at 100% 100%, rgba(0, 229, 192, 0.18), transparent 50%),
+    linear-gradient(180deg, #04141c 0%, #0a2a22 50%, #061820 100%);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1e7e34, #00e5c0);
+  border-radius: 999px;
 }
