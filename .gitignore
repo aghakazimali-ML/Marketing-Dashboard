@@ -53,5 +53,8 @@ next-env.d.ts
 .claude/
 .windsurf/
 
+AGENTS.md
+CLAUDE.md
+
 # Local scripts containing sensitive/debug logic
 check_token.ts
