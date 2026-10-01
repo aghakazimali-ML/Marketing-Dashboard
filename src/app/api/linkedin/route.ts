@@ -5,7 +5,6 @@ import { parseRangeParams } from "@/lib/metrics/params";
 import {
   getChannelMetricsForRange,
   getPostsForRange,
-  withDeltas,
   rankBy,
 } from "@/lib/metrics/queries";
 
@@ -17,11 +16,7 @@ export async function GET(req: NextRequest) {
   const range = parseRangeParams(sp);
   const battleboard = sp.battleboard === "1";
 
-  const { current, previous } = await getChannelMetricsForRange(
-    Platform.LINKEDIN,
-    range
-  );
-  const rows = withDeltas(current, previous);
+  const rows = await getChannelMetricsForRange(Platform.LINKEDIN, range);
   const posts = await getPostsForRange(range, Platform.LINKEDIN);
 
   if (!battleboard) {

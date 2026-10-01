@@ -5,7 +5,7 @@ export type ConnectionInfo = {
   platform: Platform;
   label: string;
   connected: boolean;
-  mode: "live" | "mock";
+  mode: "live" | "unconfigured";
   hint: string;
   envKeys: string[];
   pageCount: number;
@@ -13,7 +13,6 @@ export type ConnectionInfo = {
 };
 
 export async function getConnectionStatus(): Promise<ConnectionInfo[]> {
-  const forceMock = process.env.SYNC_MOCK === "true";
   const channels = await prisma.channel.findMany({
     where: { isActive: true },
     select: {
@@ -32,6 +31,7 @@ export async function getConnectionStatus(): Promise<ConnectionInfo[]> {
         (c) => Boolean(c.accessToken || c.apiKey) && Boolean(c.externalId)
       ).length,
       anyToken: pages.some((c) => Boolean(c.accessToken || c.apiKey)),
+      hasExternalId: pages.some((c) => Boolean(c.externalId)),
     };
   }
 
@@ -42,20 +42,21 @@ export async function getConnectionStatus(): Promise<ConnectionInfo[]> {
   const web = forPlatform(Platform.WEBSITE);
 
   const linkedin =
-    Boolean(process.env.LINKEDIN_ACCESS_TOKEN?.trim()) || li.anyToken;
+    (Boolean(process.env.LINKEDIN_ACCESS_TOKEN?.trim()) && li.hasExternalId) || li.pagesWithCredentials > 0;
   const meta =
-    Boolean(process.env.META_ACCESS_TOKEN?.trim()) || fb.anyToken || ig.anyToken;
+    (Boolean(process.env.META_ACCESS_TOKEN?.trim()) && (fb.hasExternalId || ig.hasExternalId)) || fb.pagesWithCredentials > 0 || ig.pagesWithCredentials > 0;
   const youtube =
     Boolean(
       process.env.YOUTUBE_API_KEY?.trim() || process.env.YOUTUBE_ACCESS_TOKEN?.trim()
-    ) || yt.anyToken;
+    ) && yt.hasExternalId || yt.pagesWithCredentials > 0;
   const ga4 =
     (Boolean(process.env.GA4_PROPERTY_ID?.trim()) &&
       Boolean(
         process.env.GA4_ACCESS_TOKEN?.trim() ||
           process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim()
       )) ||
-    web.anyToken;
+    web.pagesWithCredentials > 0 ||
+    (Boolean(process.env.GA4_ACCESS_TOKEN?.trim() || process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim()) && web.hasExternalId);
 
   function entry(
     platform: Platform,
@@ -65,17 +66,14 @@ export async function getConnectionStatus(): Promise<ConnectionInfo[]> {
     hint: string,
     stats: { pageCount: number; pagesWithCredentials: number }
   ): ConnectionInfo {
-    const live = connected && !forceMock;
     return {
       platform,
       label,
-      connected: live,
-      mode: live ? "live" : "mock",
-      hint: forceMock
-        ? "SYNC_MOCK=true — demo data only. Set SYNC_MOCK=false to use page tokens."
-        : connected
-          ? hint
-          : `Add pages under “Manage pages” with Access Token + Page/Org ID (or set ${envKeys.join(", ")} in .env).`,
+      connected,
+      mode: connected ? "live" : "unconfigured",
+      hint: connected
+        ? hint
+        : `Configure a page/property ID and credentials (${envKeys.join(", ")}) to fetch live data. Unconfigured sources will not write data.`,
       envKeys,
       pageCount: stats.pageCount,
       pagesWithCredentials: stats.pagesWithCredentials,

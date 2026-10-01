@@ -11,7 +11,6 @@ import {
   useRangeFetch,
 } from "@/components/hooks/use-range-fetch";
 import { formatNumber } from "@/lib/metrics/periods";
-import type { MetricDelta } from "@/lib/metrics/periods";
 
 type WebsitePayload = {
   website: {
@@ -26,7 +25,6 @@ type WebsitePayload = {
       trafficSources: { source: string; users: number; sessions: number }[];
       topLandingPages: { page: string; sessions: number; bounceRate: number }[];
     };
-    deltas: Record<string, MetricDelta>;
   };
 };
 
@@ -51,7 +49,6 @@ function WebsiteContent() {
   if (error || !data) return <ErrorState message={error ?? "No data"} />;
 
   const w = data.website.current;
-  const d = data.website.deltas;
 
   const sourceCols: Column<{ source: string; users: number; sessions: number }>[] = [
     {
@@ -104,27 +101,23 @@ function WebsiteContent() {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Users" value={w.users} delta={d.users} compact />
-        <MetricCard label="Sessions" value={w.sessions} delta={d.sessions} compact />
-        <MetricCard label="New Users" value={w.newUsers} delta={d.newUsers} compact />
+        <MetricCard label="Users" value={w.users} compact />
+        <MetricCard label="Sessions" value={w.sessions} compact />
+        <MetricCard label="New Users" value={w.newUsers} compact />
         <MetricCard
           label="Bounce Rate"
           value={w.bounceRate}
-          delta={d.bounceRate}
           format="percent"
-          invertColors
         />
         <MetricCard
           label="Avg Session Duration"
           value={w.avgSessionDurationSec}
-          delta={d.avgSessionDurationSec}
           format="duration"
         />
-        <MetricCard label="Conversions" value={w.conversions} delta={d.conversions} />
+        <MetricCard label="Conversions" value={w.conversions} />
         <MetricCard
           label="Goal Completions"
           value={w.goalCompletions}
-          delta={d.goalCompletions}
         />
       </div>
 

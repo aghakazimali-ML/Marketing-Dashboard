@@ -24,7 +24,7 @@ type Connection = {
   platform: string;
   label: string;
   connected: boolean;
-  mode: "live" | "mock";
+  mode: "live" | "unconfigured";
   hint: string;
   envKeys: string[];
   pageCount?: number;
@@ -48,7 +48,6 @@ function SyncContent() {
     useFetchAll();
   const [runs, setRuns] = useState<SyncRun[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
-  const [mockForced, setMockForced] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -58,7 +57,6 @@ function SyncContent() {
       const json = await res.json();
       setRuns(json.runs ?? []);
       setConnections(json.connections ?? []);
-      setMockForced(Boolean(json.mockForced));
     } finally {
       setLoading(false);
     }
@@ -117,11 +115,7 @@ function SyncContent() {
 
       <SectionCard
         title="Connection status"
-        subtitle={
-          mockForced
-            ? "SYNC_MOCK=true — demo data only. Set SYNC_MOCK=false in .env and restart."
-            : `${liveCount} of ${connections.length} platforms ready for live fetch`
-        }
+        subtitle={`${liveCount} of ${connections.length} platforms configured for live fetch`}
       >
         {loading && connections.length === 0 ? (
           <p className="text-sm text-muted">Loading…</p>
@@ -142,7 +136,7 @@ function SyncContent() {
                         : "bg-sand-100 text-muted"
                     )}
                   >
-                    {c.connected ? "Live" : "Demo"}
+                      {c.connected ? "Ready" : "Not configured"}
                   </span>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-muted">{c.hint}</p>
@@ -194,6 +188,7 @@ function SyncContent() {
                           r.status === "FAILED" && "bg-down/10 text-down",
                           r.status === "RUNNING" &&
                             "bg-teal-500/10 text-teal-600",
+                          r.status === "SKIPPED" && "bg-sand-100 text-muted",
                           r.status === "PENDING" && "bg-sand-100 text-muted"
                         )}
                       >

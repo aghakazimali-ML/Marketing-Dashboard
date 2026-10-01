@@ -17,7 +17,6 @@ export async function GET() {
       status: dbOk ? "ok" : "degraded",
       db: dbOk,
       authConfigured: isAuthConfigured(),
-      syncMock: process.env.SYNC_MOCK === "true",
       time: new Date().toISOString(),
     },
     { status }

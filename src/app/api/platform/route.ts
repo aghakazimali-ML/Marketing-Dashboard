@@ -6,7 +6,6 @@ import {
   getChannelMetricsForRange,
   getPostsForRange,
   getWebsiteMetrics,
-  withDeltas,
 } from "@/lib/metrics/queries";
 
 export async function GET(req: NextRequest) {
@@ -19,11 +18,10 @@ export async function GET(req: NextRequest) {
 
   if (platform === Platform.WEBSITE) {
     const website = await getWebsiteMetrics(range);
-    return NextResponse.json({ website });
+    return NextResponse.json({ website: { current: website } });
   }
 
-  const { current, previous } = await getChannelMetricsForRange(platform, range);
-  const rows = withDeltas(current, previous);
+  const rows = await getChannelMetricsForRange(platform, range);
   const posts = await getPostsForRange(range, platform);
 
   return NextResponse.json({ rows, posts });

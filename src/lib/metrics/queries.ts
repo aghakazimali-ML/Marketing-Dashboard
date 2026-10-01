@@ -1,9 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { Platform } from "@/generated/prisma/client";
 import {
-  compareMetric,
   type DateRange,
-  type MetricDelta,
 } from "@/lib/metrics/periods";
 
 export type AggregatedChannelMetrics = {
@@ -77,10 +75,7 @@ function overlaps(
 export async function getChannelMetricsForRange(
   platform: Platform | Platform[],
   range: DateRange
-): Promise<{
-  current: AggregatedChannelMetrics[];
-  previous: AggregatedChannelMetrics[];
-}> {
+): Promise<AggregatedChannelMetrics[]> {
   const platforms = Array.isArray(platform) ? platform : [platform];
   const channels = await prisma.channel.findMany({
     where: { platform: { in: platforms }, isActive: true },
@@ -145,47 +140,10 @@ export async function getChannelMetricsForRange(
     });
   }
 
-  return {
-    current: aggregate(range.start, range.end),
-    previous: aggregate(range.previousStart, range.previousEnd),
-  };
+  return aggregate(range.start, range.end);
 }
 
-export type ComparedRow = AggregatedChannelMetrics & {
-  deltas: {
-    followers: MetricDelta;
-    newFollowers: MetricDelta;
-    impressions: MetricDelta;
-    engagement: MetricDelta;
-    engagementRate: MetricDelta;
-    clicks: MetricDelta;
-    growthPct: MetricDelta;
-    reach: MetricDelta;
-  };
-};
-
-export function withDeltas(
-  current: AggregatedChannelMetrics[],
-  previous: AggregatedChannelMetrics[]
-): ComparedRow[] {
-  const prevMap = new Map(previous.map((p) => [p.channelId, p]));
-  return current.map((c) => {
-    const p = prevMap.get(c.channelId) ?? emptyAgg(c.channelId, c.name, c.platform, c.handle);
-    return {
-      ...c,
-      deltas: {
-        followers: compareMetric(c.followers, p.followers),
-        newFollowers: compareMetric(c.newFollowers, p.newFollowers),
-        impressions: compareMetric(c.impressions, p.impressions),
-        engagement: compareMetric(c.engagement, p.engagement),
-        engagementRate: compareMetric(c.engagementRate, p.engagementRate),
-        clicks: compareMetric(c.clicks, p.clicks),
-        growthPct: compareMetric(c.growthPct, p.growthPct),
-        reach: compareMetric(c.reach, p.reach),
-      },
-    };
-  });
-}
+export type ComparedRow = AggregatedChannelMetrics;
 
 export async function getWebsiteMetrics(range: DateRange) {
   const snaps = await prisma.websiteSnapshot.findMany({
@@ -256,28 +214,7 @@ export async function getWebsiteMetrics(range: DateRange) {
     };
   }
 
-  const current = agg(range.start, range.end);
-  const previous = agg(range.previousStart, range.previousEnd);
-
-  return {
-    current,
-    previous,
-    deltas: {
-      users: compareMetric(current.users, previous.users),
-      sessions: compareMetric(current.sessions, previous.sessions),
-      newUsers: compareMetric(current.newUsers, previous.newUsers),
-      bounceRate: compareMetric(current.bounceRate, previous.bounceRate),
-      conversions: compareMetric(current.conversions, previous.conversions),
-      goalCompletions: compareMetric(
-        current.goalCompletions,
-        previous.goalCompletions
-      ),
-      avgSessionDurationSec: compareMetric(
-        current.avgSessionDurationSec,
-        previous.avgSessionDurationSec
-      ),
-    },
-  };
+  return agg(range.start, range.end);
 }
 
 export async function getPostsForRange(range: DateRange, platform?: Platform) {

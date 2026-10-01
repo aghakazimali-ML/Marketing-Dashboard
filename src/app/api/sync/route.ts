@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       runs,
       connections,
-      mockForced: process.env.SYNC_MOCK === "true",
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

@@ -4,7 +4,6 @@ import { AppShell } from "@/components/layout/app-shell";
 import { MetricCard } from "@/components/ui/metric-card";
 import { SectionCard } from "@/components/ui/section-card";
 import { DataTable, type Column } from "@/components/ui/data-table";
-import { TrendBadge } from "@/components/ui/metric-card";
 import {
   ErrorState,
   LoadingState,
@@ -61,10 +60,7 @@ function LinkedInContent() {
       sortable: true,
       sortValue: (r) => r.newFollowers,
       render: (r) => (
-        <span>
-          +{formatNumber(r.newFollowers)}{" "}
-          <TrendBadge delta={r.deltas.newFollowers} />
-        </span>
+        <span>+{formatNumber(r.newFollowers)}</span>
       ),
     },
     {

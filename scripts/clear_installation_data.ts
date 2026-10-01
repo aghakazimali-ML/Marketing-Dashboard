@@ -10,20 +10,23 @@ const adapter = new PrismaBetterSqlite3({ url });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("Clearing demo data from database:", url);
+  console.log("Clearing analytics, connected channels, team accounts, invites, and saved AI settings.");
   await prisma.postMetrics.deleteMany();
   await prisma.post.deleteMany();
   await prisma.metricSnapshot.deleteMany();
   await prisma.websiteSnapshot.deleteMany();
   await prisma.syncRun.deleteMany();
   await prisma.channel.deleteMany();
-  console.log("Demo data cleared.");
+  await prisma.teamInvite.deleteMany();
+  await prisma.teamMember.deleteMany();
+  await prisma.aiSettings.deleteMany();
+  console.log("Installation data cleared. The owner account and environment configuration were preserved.");
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();

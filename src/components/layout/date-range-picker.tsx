@@ -41,10 +41,7 @@ export function DateRangePicker() {
         </div>
       )}
       <span className="text-xs text-muted">
-        Current: {format(range.start, "MMM d")} – {format(range.end, "MMM d, yyyy")}
-      </span>
-      <span className="text-xs text-muted">
-        Previous: {format(range.previousStart, "MMM d")} – {format(range.previousEnd, "MMM d, yyyy")}
+        Selected range: {format(range.start, "MMM d")} – {format(range.end, "MMM d, yyyy")}
       </span>
     </div>
   );

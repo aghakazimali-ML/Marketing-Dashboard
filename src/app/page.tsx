@@ -10,7 +10,6 @@ import {
   useRangeFetch,
 } from "@/components/hooks/use-range-fetch";
 import { formatNumber } from "@/lib/metrics/periods";
-import type { MetricDelta } from "@/lib/metrics/periods";
 import { format } from "date-fns";
 
 type OverviewData = {
@@ -24,7 +23,6 @@ type OverviewData = {
     avgEngagementRate: number;
     websiteUsers: number;
     websiteSessions: number;
-    deltas: Record<string, MetricDelta>;
   };
   bestPlatform?: { platform: string; engagementRate: number };
   bestLinkedIn?: { name: string; engagementRate: number; impressions: number };
@@ -60,28 +58,25 @@ function OverviewContent() {
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricCard label="Total Followers" value={t.followers} delta={t.deltas.followers} compact />
-        <MetricCard label="Impressions" value={t.impressions} delta={t.deltas.impressions} compact />
-        <MetricCard label="Reach" value={t.reach} delta={t.deltas.reach} compact />
-        <MetricCard label="Engagement" value={t.engagement} delta={t.deltas.engagement} compact />
-        <MetricCard label="Total Clicks" value={t.clicks} delta={t.deltas.clicks} compact />
-        <MetricCard label="New Followers" value={t.newFollowers} delta={t.deltas.newFollowers} />
+        <MetricCard label="Total Followers" value={t.followers} compact />
+        <MetricCard label="Impressions" value={t.impressions} compact />
+        <MetricCard label="Reach" value={t.reach} compact />
+        <MetricCard label="Engagement" value={t.engagement} compact />
+        <MetricCard label="Total Clicks" value={t.clicks} compact />
+        <MetricCard label="New Followers" value={t.newFollowers} />
         <MetricCard
           label="Avg Engagement Rate"
           value={t.avgEngagementRate}
-          delta={t.deltas.avgEngagementRate}
           format="percent"
         />
         <MetricCard
           label="Website Users"
           value={t.websiteUsers}
-          delta={t.deltas.websiteUsers}
           compact
         />
         <MetricCard
           label="Sessions"
           value={t.websiteSessions}
-          delta={t.deltas.websiteSessions}
           compact
         />
       </div>

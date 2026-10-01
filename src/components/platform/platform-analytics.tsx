@@ -3,7 +3,6 @@
 import { MetricCard } from "@/components/ui/metric-card";
 import { SectionCard } from "@/components/ui/section-card";
 import { DataTable, type Column } from "@/components/ui/data-table";
-import { TrendBadge } from "@/components/ui/metric-card";
 import {
   ErrorState,
   LoadingState,
@@ -184,7 +183,7 @@ export function PlatformAnalytics({
       sortValue: (r) => r.growthPct,
       render: (r) => (
         <span className="inline-flex items-center gap-1">
-          {r.growthPct.toFixed(1)}% <TrendBadge delta={r.deltas.growthPct} />
+          {r.growthPct.toFixed(1)}%
         </span>
       ),
     },

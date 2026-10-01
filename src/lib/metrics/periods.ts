@@ -8,7 +8,6 @@ import {
   startOfQuarter,
   endOfQuarter,
   startOfYear,
-  differenceInCalendarDays,
 } from "date-fns";
 
 export type DatePreset =
@@ -25,8 +24,6 @@ export type DateRange = {
   preset: DatePreset;
   start: Date;
   end: Date;
-  previousStart: Date;
-  previousEnd: Date;
   label: string;
 };
 
@@ -40,13 +37,6 @@ export const PRESET_OPTIONS: { value: DatePreset; label: string }[] = [
   { value: "ytd", label: "Year to Date" },
   { value: "custom", label: "Custom Range" },
 ];
-
-function previousEquivalent(start: Date, end: Date): { previousStart: Date; previousEnd: Date } {
-  const days = differenceInCalendarDays(end, start) + 1;
-  const previousEnd = endOfDay(subDays(start, 1));
-  const previousStart = startOfDay(subDays(previousEnd, days - 1));
-  return { previousStart, previousEnd };
-}
 
 export function resolveDateRange(
   preset: DatePreset,
@@ -109,23 +99,7 @@ export function resolveDateRange(
       label = "Last 30 Days";
   }
 
-  const { previousStart, previousEnd } = previousEquivalent(start, end);
-  return { preset, start, end, previousStart, previousEnd, label };
-}
-
-export type MetricDelta = {
-  current: number;
-  previous: number;
-  diff: number;
-  pctChange: number | null;
-  trend: "up" | "down" | "flat";
-};
-
-export function compareMetric(current: number, previous: number): MetricDelta {
-  const diff = current - previous;
-  const pctChange = previous === 0 ? (current === 0 ? 0 : null) : (diff / previous) * 100;
-  const trend = diff > 0 ? "up" : diff < 0 ? "down" : "flat";
-  return { current, previous, diff, pctChange, trend };
+  return { preset, start, end, label };
 }
 
 export function formatNumber(n: number, compact = false): string {
@@ -136,12 +110,6 @@ export function formatNumber(n: number, compact = false): string {
     }).format(n);
   }
   return new Intl.NumberFormat("en").format(Math.round(n));
-}
-
-export function formatPct(n: number | null, digits = 1): string {
-  if (n === null || Number.isNaN(n)) return "—";
-  const sign = n > 0 ? "+" : "";
-  return `${sign}${n.toFixed(digits)}%`;
 }
 
 export function formatDuration(seconds: number): string {

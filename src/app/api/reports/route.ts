@@ -6,10 +6,9 @@ import {
   getChannelMetricsForRange,
   getPostsForRange,
   getWebsiteMetrics,
-  withDeltas,
   rankBy,
 } from "@/lib/metrics/queries";
-import { compareMetric, formatNumber } from "@/lib/metrics/periods";
+import { formatNumber } from "@/lib/metrics/periods";
 import { DASHBOARD_NAME } from "@/lib/brand";
 
 export async function GET(req: NextRequest) {
@@ -33,7 +32,7 @@ export async function GET(req: NextRequest) {
     getPostsForRange(range),
   ]);
 
-  const rows = withDeltas(social.current, social.previous);
+  const rows = social;
   const linkedin = rows.filter((r) => r.platform === Platform.LINKEDIN);
   const topPosts = rankBy(posts, (p) => p.engagement).slice(0, 10);
 
@@ -44,14 +43,6 @@ export async function GET(req: NextRequest) {
     clicks: rows.reduce((s, r) => s + r.clicks, 0),
     newFollowers: rows.reduce((s, r) => s + r.newFollowers, 0),
   };
-  const prev = {
-    followers: social.previous.reduce((s, r) => s + r.followers, 0),
-    impressions: social.previous.reduce((s, r) => s + r.impressions, 0),
-    engagement: social.previous.reduce((s, r) => s + r.engagement, 0),
-    clicks: social.previous.reduce((s, r) => s + r.clicks, 0),
-    newFollowers: social.previous.reduce((s, r) => s + r.newFollowers, 0),
-  };
-
   const bestLi = rankBy(linkedin, (r) => r.engagementRate)[0];
   const executiveSummary = [
     `Period: ${range.label} (${range.start.toDateString()} – ${range.end.toDateString()}).`,
@@ -59,7 +50,7 @@ export async function GET(req: NextRequest) {
     bestLi
       ? `Top LinkedIn page: ${bestLi.name} at ${bestLi.engagementRate}% engagement rate.`
       : "",
-    `Website: ${formatNumber(website.current.users)} users and ${formatNumber(website.current.sessions)} sessions; ${formatNumber(website.current.conversions)} conversions.`,
+    `Website: ${formatNumber(website.users)} users and ${formatNumber(website.sessions)} sessions; ${formatNumber(website.conversions)} conversions.`,
     topPosts[0]
       ? `Top post: “${topPosts[0].title}” on ${topPosts[0].platform} (${formatNumber(topPosts[0].engagement)} engagements).`
       : "",
@@ -76,22 +67,14 @@ export async function GET(req: NextRequest) {
     executiveSummary,
     kpi: {
       ...totals,
-      websiteUsers: website.current.users,
-      websiteSessions: website.current.sessions,
-      conversions: website.current.conversions,
-      deltas: {
-        followers: compareMetric(totals.followers, prev.followers),
-        impressions: compareMetric(totals.impressions, prev.impressions),
-        engagement: compareMetric(totals.engagement, prev.engagement),
-        clicks: compareMetric(totals.clicks, prev.clicks),
-        newFollowers: compareMetric(totals.newFollowers, prev.newFollowers),
-        websiteUsers: website.deltas.users,
-      },
+      websiteUsers: website.users,
+      websiteSessions: website.sessions,
+      conversions: website.conversions,
     },
     platforms: rows,
     allPagesComparison: rows,
     topPosts,
-    website: website.current,
+    website,
   };
 
   if (format === "csv") {
@@ -102,8 +85,8 @@ export async function GET(req: NextRequest) {
     lines.push(`KPI,Engagement,${totals.engagement}`);
     lines.push(`KPI,Clicks,${totals.clicks}`);
     lines.push(`KPI,New Followers,${totals.newFollowers}`);
-    lines.push(`KPI,Website Users,${website.current.users}`);
-    lines.push(`KPI,Website Sessions,${website.current.sessions}`);
+    lines.push(`KPI,Website Users,${website.users}`);
+    lines.push(`KPI,Website Sessions,${website.sessions}`);
     lines.push("");
     lines.push("Platform,Page,Followers,New Followers,Impressions,Engagement,Engagement Rate,Clicks,Growth %");
     for (const r of rows) {
@@ -140,10 +123,10 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    if (website.current.trafficSources.length > 0) {
+    if (website.trafficSources.length > 0) {
       lines.push("");
       lines.push("Traffic Sources,Source,Users,Sessions");
-      for (const t of website.current.trafficSources) {
+      for (const t of website.trafficSources) {
         lines.push(["Traffic", `"${t.source}"`, t.users, t.sessions].join(","));
       }
     }

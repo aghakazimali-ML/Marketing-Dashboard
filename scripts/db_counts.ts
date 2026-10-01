@@ -16,8 +16,12 @@ async function run() {
       prisma.metricSnapshot.count(),
       prisma.websiteSnapshot.count(),
       prisma.syncRun.count(),
+      prisma.dashboardOwner.count(),
+      prisma.teamMember.count(),
+      prisma.teamInvite.count(),
+      prisma.aiSettings.count(),
     ]);
-    console.log("Counts [channels, posts, postMetrics, metricSnapshots, websiteSnapshots, syncRuns]:", counts);
+    console.log("Counts [channels, posts, postMetrics, metricSnapshots, websiteSnapshots, syncRuns, owners, teamMembers, invites, aiSettings]:", counts);
   } finally {
     await prisma.$disconnect();
   }

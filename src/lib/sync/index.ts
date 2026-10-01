@@ -11,14 +11,14 @@ export type SyncResult = {
   status: SyncStatus;
   recordsUpserted: number;
   message: string;
-  mode: "live" | "mock";
+  mode: "live" | "unconfigured";
   error?: string;
 };
 
 type ConnectorResult = {
   records: number;
   message: string;
-  mode: "live" | "mock";
+  mode: "live" | "unconfigured";
 };
 
 export async function runSync(platform?: Platform): Promise<SyncResult[]> {
@@ -52,21 +52,21 @@ export async function runSync(platform?: Platform): Promise<SyncResult[]> {
         result = await syncGA4();
       }
 
-      const message = `[${result.mode.toUpperCase()}] ${result.message}`;
+      const skipped = result.mode === "unconfigured";
 
       await prisma.syncRun.update({
         where: { id: run.id },
         data: {
-          status: SyncStatus.SUCCESS,
+          status: skipped ? SyncStatus.SKIPPED : SyncStatus.SUCCESS,
           finishedAt: new Date(),
           recordsUpserted: result.records,
-          message,
+          message: result.message,
         },
       });
 
       results.push({
         platform: p,
-        status: SyncStatus.SUCCESS,
+        status: skipped ? SyncStatus.SKIPPED : SyncStatus.SUCCESS,
         recordsUpserted: result.records,
         message: result.message,
         mode: result.mode,

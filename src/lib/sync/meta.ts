@@ -17,22 +17,19 @@ export async function syncMeta(
   if (!channels.length) {
     return {
       records: 0,
-      message: `No ${platform} pages configured — add them under Manage pages`,
-      mode: "mock" as const,
+      message: `Skipped: no ${platform} pages are configured. No data was written.`,
+      mode: "unconfigured" as const,
     };
   }
 
   const globalToken = process.env.META_ACCESS_TOKEN?.trim();
-  const forceMock = process.env.SYNC_MOCK === "true";
-  const canLive =
-    !forceMock &&
-    channels.some((c) => Boolean(resolveChannelToken(c.accessToken, globalToken)) && c.externalId);
+  const canLive = channels.some((c) => Boolean(resolveChannelToken(c.accessToken, globalToken)) && c.externalId);
 
   if (!canLive) {
     return {
       records: 0,
-      message: `No live credentials found for ${platform}. Please configure API keys.`,
-      mode: "mock" as const,
+      message: `Skipped: configure a ${platform} access token and account ID. No data was written.`,
+      mode: "unconfigured" as const,
     };
   }
 

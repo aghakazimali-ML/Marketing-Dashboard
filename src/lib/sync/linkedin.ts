@@ -19,16 +19,13 @@ export async function syncLinkedIn() {
   if (!channels.length) {
     return {
       records: 0,
-      message: "No LinkedIn pages configured — add them under Manage pages",
-      mode: "mock" as const,
+      message: "Skipped: no LinkedIn pages are configured. No data was written.",
+      mode: "unconfigured" as const,
     };
   }
 
   const globalToken = process.env.LINKEDIN_ACCESS_TOKEN?.trim();
-  const forceMock = process.env.SYNC_MOCK === "true";
-  const canLive =
-    !forceMock &&
-    channels.some(
+  const canLive = channels.some(
       (c) =>
         Boolean(resolveChannelToken(c.accessToken, globalToken)) &&
         Boolean(c.externalId)
@@ -37,8 +34,8 @@ export async function syncLinkedIn() {
   if (!canLive) {
     return {
       records: 0,
-      message: "No live LinkedIn credentials found. Please configure API keys.",
-      mode: "mock" as const,
+      message: "Skipped: configure a LinkedIn token and organization ID. No data was written.",
+      mode: "unconfigured" as const,
     };
   }
 

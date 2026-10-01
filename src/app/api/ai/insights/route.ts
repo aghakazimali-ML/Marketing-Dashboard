@@ -10,7 +10,6 @@ import { parseRangeParams } from "@/lib/metrics/params";
 import {
   getChannelMetricsForRange,
   getWebsiteMetrics,
-  withDeltas,
 } from "@/lib/metrics/queries";
 
 const insightSchema = z.object({
@@ -56,7 +55,7 @@ export async function POST(req: NextRequest) {
     getChannelMetricsForRange(SOCIAL_PLATFORMS, range),
     getWebsiteMetrics(range),
   ]);
-  const channels = withDeltas(social.current, social.previous)
+  const channels = social
     .sort((left, right) => right.impressions - left.impressions)
     .slice(0, 40)
     .map((channel) => ({
@@ -76,11 +75,11 @@ export async function POST(req: NextRequest) {
     period: range.label,
     channels,
     website: {
-      users: website.current.users,
-      sessions: website.current.sessions,
-      conversions: website.current.conversions,
-      bounceRate: website.current.bounceRate,
-      avgSessionDurationSec: website.current.avgSessionDurationSec,
+      users: website.users,
+      sessions: website.sessions,
+      conversions: website.conversions,
+      bounceRate: website.bounceRate,
+      avgSessionDurationSec: website.avgSessionDurationSec,
     },
   };
 

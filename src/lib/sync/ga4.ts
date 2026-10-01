@@ -18,15 +18,14 @@ export async function syncGA4() {
     channel?.accessToken,
     process.env.GA4_ACCESS_TOKEN
   );
-  const forceMock = process.env.SYNC_MOCK === "true";
-  const canLive = !forceMock && Boolean(propertyId) && Boolean(accessToken);
+  const canLive = Boolean(propertyId) && Boolean(accessToken);
 
   if (!canLive) {
     return {
       records: 0,
       message:
-        "No live GA4 credentials found. Add Property ID + Access Token on the Website page.",
-      mode: "mock" as const,
+        "Skipped: configure the GA4 property ID and access token. No data was written.",
+      mode: "unconfigured" as const,
     };
   }
 

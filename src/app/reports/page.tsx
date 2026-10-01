@@ -11,7 +11,7 @@ import {
   useRangeFetch,
 } from "@/components/hooks/use-range-fetch";
 import { useDateRange } from "@/components/providers/date-range-provider";
-import { formatNumber, type DatePreset, type MetricDelta } from "@/lib/metrics/periods";
+import { formatNumber, type DatePreset } from "@/lib/metrics/periods";
 import { format } from "date-fns";
 import type { ComparedRow } from "@/lib/metrics/queries";
 import { DASHBOARD_NAME } from "@/lib/brand";
@@ -28,7 +28,6 @@ type Report = {
     websiteUsers: number;
     websiteSessions: number;
     conversions: number;
-    deltas: Record<string, MetricDelta>;
   };
   allPagesComparison: ComparedRow[];
   topPosts: {
@@ -302,10 +301,10 @@ function ReportsContent() {
           </SectionCard>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard label="Followers" value={data.kpi.followers} delta={data.kpi.deltas.followers} compact />
-            <MetricCard label="Impressions" value={data.kpi.impressions} delta={data.kpi.deltas.impressions} compact />
-            <MetricCard label="Engagement" value={data.kpi.engagement} delta={data.kpi.deltas.engagement} compact />
-            <MetricCard label="Website Users" value={data.kpi.websiteUsers} delta={data.kpi.deltas.websiteUsers} compact />
+            <MetricCard label="Followers" value={data.kpi.followers} compact />
+            <MetricCard label="Impressions" value={data.kpi.impressions} compact />
+            <MetricCard label="Engagement" value={data.kpi.engagement} compact />
+            <MetricCard label="Website Users" value={data.kpi.websiteUsers} compact />
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">

@@ -195,7 +195,7 @@ function InsightsContent() {
 
       <SectionCard
         title="Generate insights"
-        subtitle={`${range.label}: ${format(range.start, "MMM d")} – ${format(range.end, "MMM d, yyyy")} · Previous: ${format(range.previousStart, "MMM d")} – ${format(range.previousEnd, "MMM d, yyyy")}`}
+        subtitle={`${range.label}: ${format(range.start, "MMM d")} – ${format(range.end, "MMM d, yyyy")}`}
       >
         <p className="max-w-3xl text-sm leading-relaxed text-muted">
           The selected period’s aggregate social and website metrics are sent to {AI_PROVIDERS.find((item) => item.value === settings?.provider)?.label ?? "the selected AI provider"} when you generate insights. Post text, access tokens, and API credentials are not included. New platform data is added when an administrator runs a fetch.

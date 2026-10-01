@@ -14,22 +14,21 @@ export async function syncYouTube() {
   if (!channel) {
     return {
       records: 0,
-      message: "No YouTube channel configured — add it under Manage pages",
-      mode: "mock" as const,
+      message: "Skipped: no YouTube channel is configured. No data was written.",
+      mode: "unconfigured" as const,
     };
   }
 
   const apiKey =
     resolveChannelToken(channel.apiKey, process.env.YOUTUBE_API_KEY) ||
     resolveChannelToken(channel.accessToken, process.env.YOUTUBE_ACCESS_TOKEN);
-  const forceMock = process.env.SYNC_MOCK === "true";
-  const canLive = !forceMock && Boolean(apiKey) && Boolean(channel.externalId);
+  const canLive = Boolean(apiKey) && Boolean(channel.externalId);
 
   if (!canLive) {
     return {
       records: 0,
-      message: "No live YouTube credentials found. Please configure API keys.",
-      mode: "mock" as const,
+      message: "Skipped: configure a YouTube API key and channel ID. No data was written.",
+      mode: "unconfigured" as const,
     };
   }
 
