@@ -42,7 +42,7 @@ export default function OverviewPage() {
   return (
     <AppShell
       title="Executive Overview"
-      subtitle="Cross-channel performance for NETS International Marketing"
+      subtitle="Cross-channel performance at a glance"
     >
       <OverviewContent />
     </AppShell>

@@ -28,32 +28,32 @@ function randFloat(min: number, max: number, decimals = 2) {
 }
 
 const LINKEDIN_PAGES = [
-  { name: "NETS International", handle: "nets-international", baseFollowers: 18500, growth: 1.02 },
-  { name: "Zenodigi", handle: "zenodigi", baseFollowers: 7100, growth: 1.03 },
-  { name: "NETS Solutions", handle: "nets-solutions", baseFollowers: 4200, growth: 1.015 },
-  { name: "NETS Careers", handle: "nets-careers", baseFollowers: 9800, growth: 1.025 },
-  { name: "NETS Events", handle: "nets-events", baseFollowers: 3100, growth: 1.01 },
-  { name: "NETS Innovation Lab", handle: "nets-innovation", baseFollowers: 2400, growth: 1.04 },
+  { name: "Main Brand", handle: "main-brand", baseFollowers: 18500, growth: 1.02 },
+  { name: "Product Team", handle: "product-team", baseFollowers: 7100, growth: 1.03 },
+  { name: "Careers", handle: "careers", baseFollowers: 4200, growth: 1.015 },
+  { name: "Events", handle: "events", baseFollowers: 9800, growth: 1.025 },
+  { name: "Innovation Lab", handle: "innovation-lab", baseFollowers: 3100, growth: 1.01 },
+  { name: "Community", handle: "community", baseFollowers: 2400, growth: 1.04 },
 ];
 
 const FACEBOOK_PAGES = [
-  { name: "NETS International", handle: "netsinternational", baseFollowers: 22400, growth: 1.012 },
-  { name: "Zenodigi", handle: "zenodigi", baseFollowers: 8900, growth: 1.018 },
-  { name: "NETS Careers", handle: "netscareers", baseFollowers: 5600, growth: 1.02 },
-  { name: "NETS Community", handle: "netscommunity", baseFollowers: 11200, growth: 1.008 },
+  { name: "Main Brand", handle: "mainbrand", baseFollowers: 22400, growth: 1.012 },
+  { name: "Product Team", handle: "productteam", baseFollowers: 8900, growth: 1.018 },
+  { name: "Careers", handle: "careers", baseFollowers: 5600, growth: 1.02 },
+  { name: "Community", handle: "community", baseFollowers: 11200, growth: 1.008 },
 ];
 
 const POST_TITLES = [
   "Announcing our latest digital transformation partnership",
-  "Inside NETS: How we scale customer experience",
-  "5 trends reshaping payments in 2026",
-  "Meet the team behind Zenodigi's newest launch",
-  "Career spotlight: Engineering excellence at NETS",
+  "Inside the team: How we scale customer experience",
+  "Trends reshaping digital marketing",
+  "Meet the team behind our newest launch",
+  "Career spotlight: Engineering excellence",
   "Event recap: Innovation Summit highlights",
-  "Why brands choose NETS for regional expansion",
+  "Why customers choose us",
   "Product update: Faster onboarding, smarter insights",
-  "Community stories: Clients succeeding with NETS",
-  "Behind the scenes at NETS Innovation Lab",
+  "Community stories: Customer success highlights",
+  "Behind the scenes at the Innovation Lab",
 ];
 
 async function clearAll() {
@@ -96,9 +96,9 @@ async function seedChannels() {
     await prisma.channel.create({
       data: {
         platform: Platform.INSTAGRAM,
-        name: "NETS International",
-        handle: "nets_international",
-        externalId: "ig_nets",
+        name: "Main Brand",
+        handle: "main_brand",
+        externalId: "demo_ig_account",
       },
     })
   );
@@ -107,9 +107,9 @@ async function seedChannels() {
     await prisma.channel.create({
       data: {
         platform: Platform.YOUTUBE,
-        name: "NETS International",
-        handle: "@NETSInternational",
-        externalId: "yt_nets",
+        name: "Main Channel",
+        handle: "@mainchannel",
+        externalId: "demo_yt_channel",
       },
     })
   );
@@ -118,9 +118,9 @@ async function seedChannels() {
     await prisma.channel.create({
       data: {
         platform: Platform.WEBSITE,
-        name: "nets.international",
+        name: "Main Website",
         handle: "ga4_property",
-        externalId: "ga4_nets",
+        externalId: "demo_ga4_property",
       },
     })
   );
@@ -337,7 +337,7 @@ async function seedRecentWeekly(channelId: string, platform: Platform, latestFol
 }
 
 async function main() {
-  console.log("Seeding NETS Marketing dashboard data...");
+  console.log("Seeding sample marketing dashboard data...");
   await clearAll();
 
   const now = new Date();
@@ -364,12 +364,12 @@ async function main() {
 
   const ig = channels.find((c) => c.platform === Platform.INSTAGRAM)!;
   await seedMonthlySnapshots(ig.id, Platform.INSTAGRAM, 15400, 1.022, months);
-  await seedPosts(ig.id, Platform.INSTAGRAM, "NETS International", months.slice(-4));
+  await seedPosts(ig.id, Platform.INSTAGRAM, "Main Brand", months.slice(-4));
   await seedRecentWeekly(ig.id, Platform.INSTAGRAM, 15400);
 
   const yt = channels.find((c) => c.platform === Platform.YOUTUBE)!;
   await seedMonthlySnapshots(yt.id, Platform.YOUTUBE, 8200, 1.028, months);
-  await seedPosts(yt.id, Platform.YOUTUBE, "NETS International", months.slice(-4));
+  await seedPosts(yt.id, Platform.YOUTUBE, "Main Channel", months.slice(-4));
   await seedRecentWeekly(yt.id, Platform.YOUTUBE, 8200);
 
   await seedWebsite(months);

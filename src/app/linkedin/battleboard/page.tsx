@@ -34,7 +34,7 @@ export default function BattleboardPage() {
   return (
     <AppShell
       title="LinkedIn Battleboard"
-      subtitle="Ranked leaders across NETS company pages — see who is winning"
+      subtitle="Ranked leaders across connected LinkedIn pages"
     >
       <BattleboardContent />
     </AppShell>

@@ -14,6 +14,7 @@ import { useDateRange } from "@/components/providers/date-range-provider";
 import { formatNumber, type DatePreset, type MetricDelta } from "@/lib/metrics/periods";
 import { format } from "date-fns";
 import type { ComparedRow } from "@/lib/metrics/queries";
+import { DASHBOARD_NAME } from "@/lib/brand";
 
 type Report = {
   meta: { title: string; period: string; generatedAt: string };
@@ -90,7 +91,7 @@ function ReportsContent() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `nets-report-${format(range.start, "yyyyMMdd")}.csv`;
+      a.download = `marketing-report-${format(range.start, "yyyyMMdd")}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -163,7 +164,7 @@ function ReportsContent() {
         XLSX.utils.aoa_to_sheet([["Executive Summary"], [report.executiveSummary]]),
         "Summary"
       );
-      XLSX.writeFile(wb, `nets-report-${format(range.start, "yyyyMMdd")}.xlsx`);
+      XLSX.writeFile(wb, `marketing-report-${format(range.start, "yyyyMMdd")}.xlsx`);
     } finally {
       setBusy(null);
     }
@@ -178,7 +179,7 @@ function ReportsContent() {
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF();
       doc.setFontSize(16);
-      doc.text("NETS Marketing Performance Report", 14, 18);
+      doc.text(`${DASHBOARD_NAME} Report`, 14, 18);
       doc.setFontSize(10);
       doc.text(`Period: ${report.meta.period}`, 14, 26);
       doc.text(`Generated: ${format(new Date(report.meta.generatedAt), "PPpp")}`, 14, 32);
@@ -208,7 +209,7 @@ function ReportsContent() {
           r.growthPct.toFixed(1),
         ]),
       });
-      doc.save(`nets-report-${format(range.start, "yyyyMMdd")}.pdf`);
+      doc.save(`marketing-report-${format(range.start, "yyyyMMdd")}.pdf`);
     } finally {
       setBusy(null);
     }

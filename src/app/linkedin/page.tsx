@@ -20,7 +20,7 @@ export default function LinkedInPage() {
   return (
     <AppShell
       title="LinkedIn Comparison"
-      subtitle="Compare all NETS company pages side by side"
+      subtitle="Compare connected LinkedIn pages side by side"
     >
       <LinkedInContent />
     </AppShell>

@@ -4,9 +4,13 @@ import { RefreshCw } from "lucide-react";
 import { useFetchAll } from "@/components/providers/fetch-all-provider";
 import { format } from "date-fns";
 import clsx from "clsx";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export function FetchAllButton() {
+  const user = useAuth();
   const { fetching, fetchAll, lastFetchedAt } = useFetchAll();
+
+  if (user?.role !== "ADMIN") return null;
 
   return (
     <div className="flex items-center gap-3">

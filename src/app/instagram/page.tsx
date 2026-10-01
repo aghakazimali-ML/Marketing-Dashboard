@@ -7,7 +7,7 @@ export default function InstagramPage() {
   return (
     <AppShell
       title="Instagram Analytics"
-      subtitle="NETS International Instagram performance"
+      subtitle="Performance across connected Instagram accounts"
     >
       <PlatformAnalytics
         platform="INSTAGRAM"

@@ -1,7 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/health"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/api/auth/login",
+  "/api/auth/signup",
+  "/api/auth/invites",
+  "/api/auth/setup",
+  "/api/health",
+];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some(
@@ -25,29 +33,27 @@ export async function proxy(req: NextRequest) {
   }
 
   const secret = process.env.AUTH_SECRET;
-  const password = process.env.DASHBOARD_PASSWORD;
 
   // Fail closed in production if auth not configured
   if (process.env.NODE_ENV === "production") {
-    if (!secret || secret.length < 16 || !password || password.length < 8) {
+    if (!secret || secret.length < 16) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(
           {
-            error:
-              "Server misconfigured: set AUTH_SECRET (16+) and DASHBOARD_PASSWORD (8+) before deploying.",
+            error: "Server misconfigured: set AUTH_SECRET (16+) before deploying.",
           },
           { status: 503 }
         );
       }
       return new NextResponse(
-        "Dashboard not configured for production. Set AUTH_SECRET and DASHBOARD_PASSWORD.",
+        "Dashboard not configured for production. Set AUTH_SECRET.",
         { status: 503 }
       );
     }
   }
 
-  // Dev without password: allow access (local only)
-  if (!password || !secret || secret.length < 16) {
+  // Dev without a session secret: allow access locally.
+  if (!secret || secret.length < 16) {
     return NextResponse.next();
   }
 

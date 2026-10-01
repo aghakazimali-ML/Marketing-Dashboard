@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -33,6 +34,23 @@ export function DateRangeProvider({ children }: { children: ReactNode }) {
 
   const setCustom = useCallback((start: Date, end: Date) => {
     setRange(resolveDateRange("custom", start, end));
+  }, []);
+
+  useEffect(() => {
+    let currentDay = new Date().toDateString();
+    const timer = setInterval(() => {
+      const now = new Date();
+      const nextDay = now.toDateString();
+      if (nextDay === currentDay) return;
+      currentDay = nextDay;
+      setRange((current) =>
+        current.preset === "custom"
+          ? current
+          : resolveDateRange(current.preset, undefined, undefined, now)
+      );
+    }, 60_000);
+
+    return () => clearInterval(timer);
   }, []);
 
   const value = useMemo(

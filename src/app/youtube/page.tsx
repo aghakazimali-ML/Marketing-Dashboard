@@ -7,7 +7,7 @@ export default function YouTubePage() {
   return (
     <AppShell
       title="YouTube Analytics"
-      subtitle="NETS International channel performance"
+      subtitle="Performance across connected YouTube channels"
     >
       <PlatformAnalytics
         platform="YOUTUBE"

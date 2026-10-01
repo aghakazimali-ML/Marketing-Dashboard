@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth/authorization";
 import { Platform } from "@/generated/prisma/client";
 import { parseRangeParams } from "@/lib/metrics/params";
 import {
@@ -9,8 +10,12 @@ import {
   rankBy,
 } from "@/lib/metrics/queries";
 import { compareMetric, formatNumber } from "@/lib/metrics/periods";
+import { DASHBOARD_NAME } from "@/lib/brand";
 
 export async function GET(req: NextRequest) {
+  const access = await requireUser(req);
+  if (!access.ok) return access.response;
+
   const sp = Object.fromEntries(req.nextUrl.searchParams);
   const range = parseRangeParams(sp);
   const format = sp.format || "json";
@@ -50,7 +55,7 @@ export async function GET(req: NextRequest) {
   const bestLi = rankBy(linkedin, (r) => r.engagementRate)[0];
   const executiveSummary = [
     `Period: ${range.label} (${range.start.toDateString()} – ${range.end.toDateString()}).`,
-    `Across channels, NETS reached ${formatNumber(totals.impressions, true)} impressions with ${formatNumber(totals.engagement, true)} engagements and ${formatNumber(totals.newFollowers)} new followers.`,
+    `Across channels, your organization reached ${formatNumber(totals.impressions, true)} impressions with ${formatNumber(totals.engagement, true)} engagements and ${formatNumber(totals.newFollowers)} new followers.`,
     bestLi
       ? `Top LinkedIn page: ${bestLi.name} at ${bestLi.engagementRate}% engagement rate.`
       : "",
@@ -64,7 +69,7 @@ export async function GET(req: NextRequest) {
 
   const report = {
     meta: {
-      title: "NETS Marketing Performance Report",
+      title: `${DASHBOARD_NAME} Report`,
       period: range.label,
       generatedAt: new Date().toISOString(),
     },
@@ -148,7 +153,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(lines.join("\n"), {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="nets-marketing-report.csv"`,
+        "Content-Disposition": `attachment; filename="marketing-report.csv"`,
       },
     });
   }

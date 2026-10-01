@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
+import { DASHBOARD_NAME } from "@/lib/brand";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -13,9 +14,8 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "NETS Marketing Performance",
-  description:
-    "Internal Marketing Performance Dashboard for NETS International Marketing Department",
+  title: DASHBOARD_NAME,
+  description: `${DASHBOARD_NAME} dashboard for social media and website performance insights.`,
   icons: {
     icon: "/favicon.svg",
   },

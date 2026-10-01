@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { Platform } from "@/generated/prisma/client";
 import { getConnectionStatus, listRecentSyncRuns, runSync } from "@/lib/sync";
 import type { ConnectionInfo } from "@/lib/sync/status";
+import { requireAdmin } from "@/lib/auth/authorization";
+import { requireUser } from "@/lib/auth/authorization";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const access = await requireUser(req);
+  if (!access.ok) return access.response;
+
   try {
     const [runs, connections] = await Promise.all([
       listRecentSyncRuns(30),
@@ -25,6 +30,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const access = await requireAdmin(req);
+  if (!access.ok) return access.response;
+
   try {
     const body = (await req.json().catch(() => ({}))) as { platform?: string };
     const platform = body.platform

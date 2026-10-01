@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth/authorization";
 import { Platform } from "@/generated/prisma/client";
 import { parseRangeParams } from "@/lib/metrics/params";
 import {
@@ -12,6 +13,9 @@ import { compareMetric } from "@/lib/metrics/periods";
 import { prisma } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
+  const access = await requireUser(req);
+  if (!access.ok) return access.response;
+
   const sp = Object.fromEntries(req.nextUrl.searchParams);
   const range = parseRangeParams(sp);
 

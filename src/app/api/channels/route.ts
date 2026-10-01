@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { encryptSecret, hasSecret } from "@/lib/crypto/secrets";
 import { isSafeExternalId } from "@/lib/security/sanitize";
 import { rateLimit } from "@/lib/security/rate-limit";
+import { requireAdmin, requireUser } from "@/lib/auth/authorization";
 import { z } from "zod";
 
 function serializeChannel(ch: {
@@ -52,6 +53,9 @@ const channelBodySchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  const access = await requireUser(req);
+  if (!access.ok) return access.response;
+
   try {
     const platform = req.nextUrl.searchParams.get("platform")?.toUpperCase() as
       | Platform
@@ -72,6 +76,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const access = await requireAdmin(req);
+  if (!access.ok) return access.response;
+
   const limited = rateLimit(`channels:${req.headers.get("x-forwarded-for") || "local"}`, 30, 60_000);
   if (!limited.ok) {
     return NextResponse.json(
@@ -134,6 +141,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const access = await requireAdmin(req);
+  if (!access.ok) return access.response;
+
   const limited = rateLimit(`channels-patch:${req.headers.get("x-forwarded-for") || "local"}`, 40, 60_000);
   if (!limited.ok) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -188,6 +198,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const access = await requireAdmin(req);
+  if (!access.ok) return access.response;
+
   const limited = rateLimit(`channels-del:${req.headers.get("x-forwarded-for") || "local"}`, 20, 60_000);
   if (!limited.ok) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });

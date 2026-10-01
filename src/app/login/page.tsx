@@ -1,18 +1,29 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
+import Link from "next/link";
 import { Suspense } from "react";
+import { BarChart3 } from "lucide-react";
+import { DASHBOARD_NAME } from "@/lib/brand";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/";
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("admin");
+  const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/setup")
+      .then((res) => res.json())
+      .then((data) => setSetupComplete(Boolean(data.setupComplete)))
+      .catch(() => setSetupComplete(true));
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -22,7 +33,7 @@ function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, username }),
+        body: JSON.stringify({ email, password }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -43,30 +54,25 @@ function LoginForm() {
         onSubmit={onSubmit}
         className="crazy-card w-full max-w-md rounded-2xl p-8"
       >
-        <div className="mb-6 flex justify-center rounded-xl bg-[#061820] p-4">
-          <Image
-            src="/nets-logo.png"
-            alt="NETS"
-            width={180}
-            height={72}
-            priority
-            className="h-auto w-full max-w-[180px]"
-          />
+        <div className="mb-5 flex justify-center text-teal-600">
+          <BarChart3 size={36} strokeWidth={1.6} aria-hidden="true" />
         </div>
         <h1 className="font-display text-center text-2xl text-navy-900">
-          Marketing Performance
+          {DASHBOARD_NAME}
         </h1>
         <p className="mt-1 text-center text-sm text-muted">
-          Sign in to access the internal dashboard
+          Sign in to access your workspace
         </p>
 
         <label className="mt-6 block text-sm">
           <span className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">
-            Username
+            Email
           </span>
           <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
             autoComplete="username"
           />
@@ -95,10 +101,14 @@ function LoginForm() {
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>
-
-        <p className="mt-6 text-center text-[10px] text-muted">
-          Design and Developed by Agha Kazim Ali
-        </p>
+        {setupComplete === false ? (
+          <p className="mt-5 text-center text-sm text-muted">
+            First time here?{" "}
+            <Link href="/signup" className="font-semibold text-teal-700 hover:text-teal-600">
+              Create your account
+            </Link>
+          </p>
+        ) : null}
       </form>
     </div>
   );

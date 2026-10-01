@@ -7,7 +7,7 @@ export default function FacebookPage() {
   return (
     <AppShell
       title="Facebook Analytics"
-      subtitle="Compare all NETS Facebook pages"
+      subtitle="Compare connected Facebook pages"
     >
       <PlatformAnalytics
         platform="FACEBOOK"

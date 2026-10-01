@@ -22,6 +22,60 @@ enum SyncStatus {
   FAILED
 }
 
+enum TeamRole {
+  ADMIN
+  ANALYST
+}
+
+enum AiProvider {
+  OPENAI
+  ANTHROPIC
+  XAI
+  GOOGLE
+}
+
+model DashboardOwner {
+  id           Int      @id @default(1)
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model TeamMember {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         TeamRole @default(ANALYST)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([role, isActive])
+}
+
+model TeamInvite {
+  id        String    @id @default(cuid())
+  email     String
+  role      TeamRole  @default(ANALYST)
+  tokenHash String    @unique
+  createdBy String
+  expiresAt DateTime
+  acceptedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email, acceptedAt])
+  @@index([expiresAt])
+}
+
+model AiSettings {
+  id        Int        @id @default(1)
+  provider  AiProvider @default(OPENAI)
+  model     String     @default("gpt-4o-mini")
+  apiKey    String?
+  updatedAt DateTime   @updatedAt
+}
+
 model Channel {
   id          String   @id @default(cuid())
   platform    Platform

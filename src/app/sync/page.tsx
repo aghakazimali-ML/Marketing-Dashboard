@@ -7,6 +7,7 @@ import { PagesManager } from "@/components/sync/pages-manager";
 import { useFetchAll } from "@/components/providers/fetch-all-provider";
 import { format } from "date-fns";
 import clsx from "clsx";
+import { useAuth } from "@/components/providers/auth-provider";
 
 type SyncRun = {
   id: string;
@@ -42,6 +43,7 @@ export default function SyncPage() {
 }
 
 function SyncContent() {
+  const user = useAuth();
   const { fetching, fetchAll, fetchPlatform, lastSummary, lastFetchedAt } =
     useFetchAll();
   const [runs, setRuns] = useState<SyncRun[]>([]);
@@ -71,39 +73,47 @@ function SyncContent() {
 
   return (
     <div className="space-y-6">
-      <PagesManager />
+      {user?.role === "ADMIN" ? (
+        <PagesManager />
+      ) : (
+        <SectionCard title="Connections are administrator-managed">
+          <p className="text-sm text-muted">Your account can view connection status and fetch history, but cannot edit credentials or run data fetches.</p>
+        </SectionCard>
+      )}
 
-      <SectionCard
-        title="Fetch all platforms"
-        subtitle="After pages are saved with tokens, this pulls LinkedIn, Facebook, Instagram, YouTube, and GA4. Dashboards refresh automatically."
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            disabled={fetching}
-            onClick={() => fetchAll()}
-            className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
-          >
-            {fetching ? "Fetching all platforms…" : "Fetch All Data"}
-          </button>
-          {connections.map((c) => (
+      {user?.role === "ADMIN" ? (
+        <SectionCard
+          title="Fetch all platforms"
+          subtitle="Fetch connected channels and refresh dashboard data."
+        >
+          <div className="flex flex-wrap items-center gap-3">
             <button
-              key={c.platform}
               type="button"
               disabled={fetching}
-              onClick={() => fetchPlatform(c.platform)}
-              className="rounded-md border border-line bg-card px-3 py-2 text-sm font-medium hover:bg-sand-100 disabled:opacity-50"
+              onClick={() => fetchAll()}
+              className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
             >
-              {fetching ? "…" : `Fetch ${c.label}`}
+              {fetching ? "Fetching all platforms…" : "Fetch All Data"}
             </button>
-          ))}
-        </div>
-        {lastSummary && (
-          <pre className="mt-4 whitespace-pre-wrap rounded-md bg-sand-100 p-3 text-xs text-ink">
-            {lastSummary}
-          </pre>
-        )}
-      </SectionCard>
+            {connections.map((c) => (
+              <button
+                key={c.platform}
+                type="button"
+                disabled={fetching}
+                onClick={() => fetchPlatform(c.platform)}
+                className="rounded-md border border-line bg-card px-3 py-2 text-sm font-medium hover:bg-sand-100 disabled:opacity-50"
+              >
+                {fetching ? "…" : `Fetch ${c.label}`}
+              </button>
+            ))}
+          </div>
+          {lastSummary && (
+            <pre className="mt-4 whitespace-pre-wrap rounded-md bg-sand-100 p-3 text-xs text-ink">
+              {lastSummary}
+            </pre>
+          )}
+        </SectionCard>
+      ) : null}
 
       <SectionCard
         title="Connection status"

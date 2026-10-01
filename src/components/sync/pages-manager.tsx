@@ -238,7 +238,7 @@ export function PagesManager() {
               required
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="NETS International"
+              placeholder="Main brand or channel name"
               className="w-full rounded-md border border-line bg-card px-3 py-2 text-sm outline-none focus:border-teal-500"
             />
           </Field>
@@ -249,7 +249,7 @@ export function PagesManager() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, handle: e.target.value }))
               }
-              placeholder="nets-international"
+              placeholder="public-handle"
               className="w-full rounded-md border border-line bg-card px-3 py-2 text-sm outline-none focus:border-teal-500"
             />
           </Field>
