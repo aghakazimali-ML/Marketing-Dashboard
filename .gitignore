@@ -43,10 +43,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
-/prisma/dev.db
-/prisma/dev.db-journal
-*.db
-*.db-journal
 
 # AI coding assistant files
 .agents/
@@ -58,8 +54,6 @@ CLAUDE.md
 
 # Local scripts containing sensitive/debug logic
 check_token.ts
-# test database
-/prisma/test.db*
 
 # local backups
 /backups
