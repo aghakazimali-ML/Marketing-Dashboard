@@ -1,16 +1,8 @@
 import "dotenv/config";
-import path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client";
-
-const url =
-  process.env.DATABASE_URL ??
-  `file:${path.join(process.cwd(), "prisma", "dev.db")}`;
-const adapter = new PrismaBetterSqlite3({ url });
-const prisma = new PrismaClient({ adapter });
+import { prisma } from "../src/lib/db";
 
 async function main() {
-  console.log("Clearing analytics, connected channels, team accounts, invites, and saved AI settings.");
+  console.log("Clearing analytics, connected channels, team accounts, invites, API keys, audit log and saved AI settings.");
   await prisma.channelDailyMetric.deleteMany();
   await prisma.websiteDailyMetric.deleteMany();
   await prisma.websiteBreakdown.deleteMany();
@@ -34,6 +26,4 @@ main()
     console.error(error);
     process.exitCode = 1;
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(() => prisma.$disconnect());

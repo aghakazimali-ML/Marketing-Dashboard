@@ -64,6 +64,8 @@ export function validateEnv(source: NodeJS.ProcessEnv = process.env) {
     if (!env.CRON_SECRET || env.CRON_SECRET.length < 24)
       errors.push("CRON_SECRET must be set (24+ characters) to enable scheduled fetches.");
   }
+  if (env.NODE_ENV !== "test" && !env.DATABASE_URL?.match(/^postgres(ql)?:\/\//))
+    errors.push("DATABASE_URL must be a PostgreSQL connection string (postgresql://user:password@host:5432/database).");
   if (env.RESEND_API_KEY && !env.INVITE_FROM_EMAIL)
     errors.push("INVITE_FROM_EMAIL is required when RESEND_API_KEY is set.");
   if (env.STRIPE_SECRET_KEY && !env.STRIPE_WEBHOOK_SECRET)

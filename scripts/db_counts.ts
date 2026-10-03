@@ -1,27 +1,19 @@
 import "dotenv/config";
-import path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-const url =
-  process.env.DATABASE_URL ??
-  `file:${path.join(process.cwd(), "prisma", "dev.db")}`;
-const adapter = new PrismaBetterSqlite3({ url });
+import { prisma } from "../src/lib/db";
+
 async function run() {
-  const { PrismaClient } = await import("../src/generated/prisma/client");
-  const prisma = new PrismaClient({ adapter });
   try {
-    const counts = await Promise.all([
-      prisma.channel.count(),
-      prisma.post.count(),
-      prisma.postMetrics.count(),
-      prisma.metricSnapshot.count(),
-      prisma.websiteSnapshot.count(),
-      prisma.syncRun.count(),
-      prisma.dashboardOwner.count(),
-      prisma.teamMember.count(),
-      prisma.teamInvite.count(),
-      prisma.aiSettings.count(),
-    ]);
-    console.log("Counts [channels, posts, postMetrics, metricSnapshots, websiteSnapshots, syncRuns, owners, teamMembers, invites, aiSettings]:", counts);
+    const entries = await Promise.all([
+      ["channels", prisma.channel.count()],
+      ["dailyMetrics", prisma.channelDailyMetric.count()],
+      ["websiteDaily", prisma.websiteDailyMetric.count()],
+      ["posts", prisma.post.count()],
+      ["syncRuns", prisma.syncRun.count()],
+      ["owners", prisma.dashboardOwner.count()],
+      ["teamMembers", prisma.teamMember.count()],
+      ["invites", prisma.teamInvite.count()],
+    ].map(async ([k, p]) => [k, await (p as Promise<number>)] as const));
+    console.log(Object.fromEntries(entries));
   } finally {
     await prisma.$disconnect();
   }

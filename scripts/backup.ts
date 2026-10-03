@@ -1,21 +1,15 @@
 /**
- * Consistent online backup of the SQLite database (safe while the app is running).
- *   npm run backup                       -> backups/dashboard-<timestamp>.db
- *   BACKUP_ENCRYPTION_KEY=… npm run backup  -> also encrypts (AES-256-GCM) to .db.enc and removes the plain copy
- *   BACKUP_KEEP=14 npm run backup        -> keep only the newest 14 backups
- * Restore: see docs/PRODUCTION.md ("Restore").
+ * Consistent PostgreSQL backup using pg_dump (custom format, safe while the app runs).
+ *   npm run backup                          -> backups/dashboard-<timestamp>.dump
+ *   BACKUP_ENCRYPTION_KEY=… npm run backup  -> also encrypts (AES-256-GCM) to .dump.enc and removes the plain copy
+ *   BACKUP_KEEP=14 npm run backup           -> keep only the newest 14 backups
+ * Requires the `pg_dump` binary (package postgresql-client). Restore: `npm run restore -- <file>`.
  */
 import "dotenv/config";
+import { spawnSync } from "node:child_process";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
-
-function dbPath() {
-  const url = process.env.DATABASE_URL ?? `file:${path.join(process.cwd(), "prisma", "dev.db")}`;
-  if (!url.startsWith("file:")) throw new Error("backup only supports SQLite file: URLs");
-  return url.slice("file:".length);
-}
 
 /** Output format: MAGIC(8) | iv(12) | tag(16) | ciphertext */
 export function encryptBuffer(plain: Buffer, secret: string) {
@@ -26,18 +20,17 @@ export function encryptBuffer(plain: Buffer, secret: string) {
   return Buffer.concat([Buffer.from("MDBKUP01"), iv, cipher.getAuthTag(), data]);
 }
 
-async function main() {
+function main() {
+  const url = process.env.DATABASE_URL;
+  if (!url?.startsWith("postgres")) throw new Error("DATABASE_URL must be a PostgreSQL URL");
   const dir = process.env.BACKUP_DIR ?? path.join(process.cwd(), "backups");
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const target = path.join(dir, `dashboard-${stamp}.db`);
+  const target = path.join(dir, `dashboard-${stamp}.dump`);
 
-  const db = new Database(dbPath(), { readonly: true, fileMustExist: true });
-  try {
-    await db.backup(target); // SQLite online backup API
-  } finally {
-    db.close();
-  }
+  const res = spawnSync("pg_dump", ["--format=custom", "--no-owner", "--file", target, url], { encoding: "utf8" });
+  if (res.error) throw new Error(`pg_dump not found: install postgresql-client (${res.error.message})`);
+  if (res.status !== 0) throw new Error(`pg_dump failed: ${res.stderr.replace(/postgres(ql)?:\/\/\S+/g, "postgresql://***")}`);
 
   let finalPath = target;
   const secret = process.env.BACKUP_ENCRYPTION_KEY?.trim();
@@ -60,8 +53,10 @@ async function main() {
 }
 
 if (process.argv[1]?.endsWith("backup.ts")) {
-  main().catch((e) => {
+  try {
+    main();
+  } catch (e) {
     console.error(e instanceof Error ? e.message : e);
     process.exit(1);
-  });
+  }
 }
