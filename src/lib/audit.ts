@@ -10,7 +10,8 @@ export type AuditAction =
   | "member.role_changed" | "member.disabled" | "member.enabled"
   | "channel.created" | "channel.updated" | "channel.deleted" | "channel.token_changed" | "channel.oauth_connected"
   | "ai.settings_changed" | "sync.manual" | "sync.cron"
-  | "billing.checkout_started" | "billing.portal_opened" | "billing.plan_changed";
+  | "billing.checkout_started" | "billing.portal_opened" | "billing.plan_changed"
+  | "billing.payment_completed" | "billing.payment_failed" | "billing.payment_rejected";
 
 type Actor = { email?: string | null; role?: string | null };
 

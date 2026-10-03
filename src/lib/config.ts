@@ -39,6 +39,12 @@ const schema = z.object({
   STRIPE_PRICE_PRO_YEARLY: optional,
   STRIPE_PRICE_EXCLUSIVE_MONTHLY: optional,
   STRIPE_PRICE_EXCLUSIVE_YEARLY: optional,
+  // Safepay (Pakistan)
+  SAFEPAY_ENVIRONMENT: z.enum(["sandbox", "production"]).optional(),
+  SAFEPAY_API_KEY: optional,
+  SAFEPAY_SECRET_KEY: optional,
+  SAFEPAY_WEBHOOK_SECRET: optional,
+  SAFEPAY_AMOUNT_UNIT: z.enum(["major", "minor"]).optional(),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -68,6 +74,9 @@ export function validateEnv(source: NodeJS.ProcessEnv = process.env) {
     errors.push("DATABASE_URL must be a PostgreSQL connection string (postgresql://user:password@host:5432/database).");
   if (env.RESEND_API_KEY && !env.INVITE_FROM_EMAIL)
     errors.push("INVITE_FROM_EMAIL is required when RESEND_API_KEY is set.");
+  const safepay = [env.SAFEPAY_API_KEY, env.SAFEPAY_SECRET_KEY, env.SAFEPAY_WEBHOOK_SECRET];
+  if (safepay.some(Boolean) && !safepay.every(Boolean))
+    errors.push("Safepay needs SAFEPAY_API_KEY, SAFEPAY_SECRET_KEY and SAFEPAY_WEBHOOK_SECRET together.");
   if (env.STRIPE_SECRET_KEY && !env.STRIPE_WEBHOOK_SECRET)
     errors.push("STRIPE_WEBHOOK_SECRET is required when STRIPE_SECRET_KEY is set.");
   return errors.length
@@ -88,6 +97,9 @@ export function getEnv(): Env {
 /** Fails fast with a readable message; called from instrumentation on server start. */
 export function assertEnv() {
   const result = validateEnv();
+  if (result.env?.NODE_ENV === "production" && result.env.SAFEPAY_API_KEY && result.env.SAFEPAY_ENVIRONMENT !== "production") {
+    console.warn("[config] Safepay is in SANDBOX mode: set SAFEPAY_ENVIRONMENT=production to take real payments.");
+  }
   if (!result.ok) {
     const message = `Configuration error:\n - ${result.errors.join("\n - ")}`;
     throw new Error(message);

@@ -8,8 +8,9 @@ export type WorkspaceState = {
   plan: Plan;
   planId: PlanId;
   status: string;
-  /** "license" = fixed by the operator via LICENSE_PLAN; "stripe" = subscription; "default" = free. */
-  source: "license" | "stripe" | "default";
+  /** "license" = fixed by the operator (LICENSE_PLAN); "safepay" = prepaid period; "stripe" = subscription; "default" = free. */
+  source: "license" | "safepay" | "stripe" | "default";
+  billingProvider: "SAFEPAY" | "STRIPE" | null;
   interval: string | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
@@ -31,6 +32,18 @@ export async function getWorkspace(): Promise<WorkspaceState> {
     return {
       plan: getPlan(licensed), planId: licensed, status: "active", source: "license", interval: null,
       currentPeriodEnd: null, cancelAtPeriodEnd: false, hasStripeCustomer: Boolean(row?.stripeCustomerId),
+      billingProvider: null,
+    };
+  }
+  // Safepay is prepaid: the paid plan is valid until currentPeriodEnd, then the workspace falls back to Free.
+  if (row?.billingProvider === "SAFEPAY") {
+    const live = row.currentPeriodEnd !== null && row.currentPeriodEnd > new Date();
+    const effective: PlanId = live ? row.plan : "FREE";
+    return {
+      plan: getPlan(effective), planId: effective, status: live ? "active" : "expired",
+      source: live ? "safepay" : "default", interval: row.billingInterval,
+      currentPeriodEnd: row.currentPeriodEnd, cancelAtPeriodEnd: true,
+      hasStripeCustomer: Boolean(row.stripeCustomerId), billingProvider: "SAFEPAY",
     };
   }
   // A cancelled / unpaid subscription falls back to Free (data is kept, paid features lock).
@@ -44,6 +57,7 @@ export async function getWorkspace(): Promise<WorkspaceState> {
     currentPeriodEnd: row?.currentPeriodEnd ?? null,
     cancelAtPeriodEnd: row?.cancelAtPeriodEnd ?? false,
     hasStripeCustomer: Boolean(row?.stripeCustomerId),
+    billingProvider: row?.billingProvider === "STRIPE" ? "STRIPE" : null,
   };
 }
 

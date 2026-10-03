@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Lock } from "lucide-react";
-import { FEATURE_LABELS, planRequiredFor, type FeatureKey } from "@/lib/billing/plans";
+import { FEATURE_LABELS, formatPkr, planRequiredFor, type FeatureKey } from "@/lib/billing/plans";
 
 /** Shown in place of a feature the current plan does not include. */
 export function UpgradePrompt({ feature, description }: { feature: FeatureKey; description?: string }) {
@@ -14,7 +14,7 @@ export function UpgradePrompt({ feature, description }: { feature: FeatureKey; d
       </span>
       <p className="font-display text-lg text-navy-900">{FEATURE_LABELS[feature]} is part of the {needed.name} plan</p>
       <p className="max-w-md text-sm text-muted">
-        {description ?? `Upgrade to ${needed.name} (from $${needed.priceMonthly}/month) to unlock ${FEATURE_LABELS[feature].toLowerCase()}.`}
+        {description ?? `Upgrade to ${needed.name} (from ${formatPkr(needed.pricePkrMonthly)}/month) to unlock ${FEATURE_LABELS[feature].toLowerCase()}.`}
       </p>
       <Link href="/billing" className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-on-accent hover:bg-teal-500">
         See plans

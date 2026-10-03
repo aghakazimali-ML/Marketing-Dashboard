@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeEqual } from "@/lib/auth/accounts";
-import { sendDueDigest } from "@/lib/reports/digest";
+import { sendDueDigest, sendRenewalReminder } from "@/lib/reports/digest";
 import { logger, errorFields } from "@/lib/logger";
 
 /** Call daily (same secret as /api/cron/sync). Sends the email digest only when one is due. */
@@ -10,7 +10,9 @@ export async function POST(req: NextRequest) {
   const provided = req.headers.get("x-cron-secret") ?? req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   if (!provided || !safeEqual(provided, secret)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    return NextResponse.json({ ok: true, ...(await sendDueDigest()) });
+    const digest = await sendDueDigest();
+    const renewal = await sendRenewalReminder();
+    return NextResponse.json({ ok: true, ...digest, renewalReminder: renewal });
   } catch (e) {
     logger.error("digest failed", errorFields(e));
     return NextResponse.json({ error: "Digest failed" }, { status: 500 });

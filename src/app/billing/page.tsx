@@ -12,7 +12,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useEntitlements } from "@/components/providers/entitlements-provider";
 import { useToast } from "@/components/providers/toast-provider";
 import { apiRequest } from "@/lib/client/api";
-import { FEATURE_LABELS, PLANS, PLAN_ORDER, planRank, type FeatureKey, type PlanId } from "@/lib/billing/plans";
+import { FEATURE_LABELS, PLANS, PLAN_ORDER, formatPkr, planRank, type FeatureKey, type PlanId } from "@/lib/billing/plans";
 import { WorkspaceSettings } from "@/components/billing/workspace-settings";
 
 export default function BillingPage() {
@@ -25,7 +25,6 @@ export default function BillingPage() {
   );
 }
 
-const money = (n: number) => (n === 0 ? "Free" : `$${n}`);
 const limitText = (v: number | null) => (v === null ? "Unlimited" : String(v));
 
 function BillingContent() {
@@ -46,6 +45,7 @@ function BillingContent() {
       return () => clearTimeout(t);
     }
     if (c === "cancelled") toast.push({ kind: "info", title: "Checkout cancelled" });
+    if (c === "failed") toast.push({ kind: "error", title: "We could not confirm that payment", body: "If money left your account it will be applied automatically within a few minutes. Otherwise contact support with your order number." });
   }, [params, toast, reload]);
 
   const current = data?.plan.id ?? "FREE";
@@ -92,6 +92,11 @@ function BillingContent() {
       </SectionCard>
 
       {error ? <ErrorState message={error} /> : null}
+      {data.billing.safepay?.environment === "sandbox" ? (
+        <p role="status" className="rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
+          Safepay is in <strong>sandbox</strong> mode: test payments only, no real money is charged.
+        </p>
+      ) : null}
       {!data.billing.configured && !managedByLicense ? (
         <p role="status" className="rounded-md border border-line bg-sand-50 px-3 py-2 text-sm text-muted">
           Online payments are not configured on this installation, so upgrades are handled by the operator. Contact them to change your plan.
@@ -110,8 +115,9 @@ function BillingContent() {
         {PLAN_ORDER.map((id) => {
           const p = PLANS[id];
           const isCurrent = id === current;
-          const price = interval === "month" ? p.priceMonthly : Math.round(p.priceYearly / 12);
+          const price = interval === "month" ? p.pricePkrMonthly : Math.round(p.pricePkrYearly / 12);
           const upgrade = planRank(id) > planRank(current as PlanId);
+          const safepayQuote = data.billing.provider === "SAFEPAY" && !managedByLicense ? data.billing.quotes?.[id]?.[interval] : undefined;
           return (
             <div key={id} className={clsx("crazy-card flex flex-col rounded-xl p-5", isCurrent && "ring-2 ring-teal-500", id === "PRO" && "border-teal-500/50")}>
               <div className="flex items-center justify-between">
@@ -120,7 +126,7 @@ function BillingContent() {
               </div>
               <p className="mt-1 text-xs text-muted">{p.tagline}</p>
               <p className="mt-4 font-display text-3xl text-navy-900">
-                {money(price)}
+                {formatPkr(price)}
                 {price > 0 ? <span className="text-sm font-normal text-muted"> /month{interval === "year" ? ", billed yearly" : ""}</span> : null}
               </p>
               <ul className="mt-4 flex-1 space-y-1.5 text-sm">
@@ -129,7 +135,21 @@ function BillingContent() {
                 ))}
               </ul>
               {id !== "FREE" ? (
-                isAdmin && canBuy && upgrade && !data.hasStripeCustomer ? (
+                isAdmin && safepayQuote ? (
+                  safepayQuote.ok ? (
+                    <div className="mt-5 space-y-1.5">
+                      <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/safepay/checkout", { plan: id, interval }, `buy-${id}`)} className="w-full rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50">
+                        {busy === `buy-${id}` ? "Redirecting to Safepay…" : `${safepayQuote.kind === "renewal" ? "Renew" : safepayQuote.kind === "upgrade" ? "Upgrade" : "Buy"} · ${formatPkr(safepayQuote.amountPkr)} with Safepay`}
+                      </button>
+                      <p className="text-center text-[11px] text-muted">
+                        {interval === "year" ? "One payment for 12 months." : "One payment for 1 month."}
+                        {safepayQuote.creditPkr > 0 ? ` Includes ${formatPkr(safepayQuote.creditPkr)} credit for the unused days of your current plan.` : ""}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="mt-5 text-center text-xs text-muted">{safepayQuote.reason}</p>
+                  )
+                ) : isAdmin && canBuy && upgrade && !data.hasStripeCustomer && data.billing.provider !== "SAFEPAY" ? (
                   <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/checkout", { plan: id, interval }, `buy-${id}`)} className="mt-5 rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50">
                     {busy === `buy-${id}` ? "Redirecting…" : `Upgrade to ${p.name}`}
                   </button>
@@ -184,8 +204,56 @@ function BillingContent() {
         </div>
       </SectionCard>
 
+      {isAdmin && data.billing.provider === "SAFEPAY" ? <PaymentHistory /> : null}
       {isAdmin ? <WorkspaceSettings /> : null}
     </div>
+  );
+}
+
+type PaymentRow = { id: string; orderId: string; plan: string; interval: string; amountPkr: number; creditPkr: number; status: string; createdAt: string; paidAt: string | null };
+
+function PaymentHistory() {
+  const [rows, setRows] = useState<PaymentRow[] | null>(null);
+  const { data } = useEntitlements();
+  useEffect(() => {
+    apiRequest<{ payments: PaymentRow[] }>("/api/billing/payments")
+      .then((r) => setRows(r.payments))
+      .catch(() => setRows([]));
+  }, [data?.plan.id]);
+  return (
+    <SectionCard title="Payment history" subtitle="Safepay payments for this workspace">
+      {rows === null ? (
+        <Skeleton className="h-16 w-full" />
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted">No payments yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <caption className="sr-only">Payment history</caption>
+            <thead className="table-head text-left">
+              <tr>
+                {["Date", "Order", "Plan", "Amount", "Status"].map((h) => (
+                  <th key={h} scope="col" className="px-3 py-2 text-[11px] font-semibold tracking-wide text-muted uppercase">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((p) => (
+                <tr key={p.id} className="border-t border-line/80">
+                  <td className="px-3 py-2 whitespace-nowrap text-muted">{format(new Date(p.paidAt ?? p.createdAt), "MMM d, yyyy")}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{p.orderId}</td>
+                  <td className="px-3 py-2 capitalize">{p.plan.toLowerCase()} · {p.interval === "year" ? "yearly" : "monthly"}</td>
+                  <td className="px-3 py-2 tabular-nums">{formatPkr(p.amountPkr)}</td>
+                  <td className="px-3 py-2">
+                    <span className={clsx("rounded px-2 py-0.5 text-[11px] font-semibold", p.status === "PAID" ? "bg-up/10 text-up" : p.status === "PENDING" ? "bg-sand-100 text-muted" : "bg-down/10 text-down")}>{p.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </SectionCard>
   );
 }
 

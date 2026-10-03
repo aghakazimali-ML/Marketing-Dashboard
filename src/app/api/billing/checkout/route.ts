@@ -31,6 +31,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "That plan is not available for purchase yet." }, { status: 503 });
   }
   const ws = await getWorkspace();
+  if (ws.source === "safepay") {
+    return NextResponse.json({ error: "Your plan is paid through Safepay. Renew or upgrade it from the Safepay checkout." }, { status: 409 });
+  }
   if (ws.source === "stripe" && ws.hasStripeCustomer) {
     return NextResponse.json({ error: "You already have a subscription. Use Manage billing to change plans." }, { status: 409 });
   }

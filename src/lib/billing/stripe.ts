@@ -118,11 +118,12 @@ export async function applySubscription(snap: SubscriptionSnapshot) {
   await prisma.workspace.upsert({
     where: { id: 1 },
     create: {
-      id: 1, plan, planStatus: snap.status, stripeCustomerId: snap.customerId, stripeSubscriptionId: snap.id,
+      id: 1, plan, planStatus: snap.status, billingProvider: "STRIPE", stripeCustomerId: snap.customerId, stripeSubscriptionId: snap.id,
       billingInterval: mapped?.interval ?? null, currentPeriodEnd: snap.currentPeriodEnd, cancelAtPeriodEnd: snap.cancelAtPeriodEnd,
     },
     update: {
       plan, planStatus: snap.status, stripeCustomerId: snap.customerId,
+      billingProvider: ended ? null : "STRIPE",
       stripeSubscriptionId: ended ? null : snap.id,
       billingInterval: mapped?.interval ?? null, currentPeriodEnd: snap.currentPeriodEnd, cancelAtPeriodEnd: snap.cancelAtPeriodEnd,
     },

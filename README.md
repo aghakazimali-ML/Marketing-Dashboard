@@ -1,20 +1,22 @@
 # Marketing Analytics Dashboard
 
-A self-hostable SaaS-style analytics product for marketing teams: LinkedIn, Facebook, Instagram, YouTube and Google Analytics 4 in one place, with reports (CSV / Excel / PDF), AI insights, team access, and Free / Starter / Pro / Exclusive plans with Stripe billing.
+A self-hostable SaaS-style analytics product for marketing teams, **built for the Pakistani market**: LinkedIn, Facebook, Instagram, YouTube and Google Analytics 4 in one place, with reports (CSV / Excel / PDF), AI insights, team access, and Free / Starter / Pro / Exclusive plans priced in **PKR and paid through Safepay** (Stripe stays available as an optional extra for international cards).
 
-**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Recharts · **PostgreSQL** (Prisma 7 + `pg`) · Zod · Stripe · Resend.
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Recharts · **PostgreSQL** (Prisma 7 + `pg`) · Zod · **Safepay** (+ optional Stripe) · Resend.
 **Deployment model:** one installation (and one PostgreSQL database) per customer; plans are enforced per installation.
 
 ## Plans
 
 | | Free | Starter | Pro | Exclusive |
 |---|---|---|---|---|
+| Price (PKR) | Rs 0 | Rs 4,999 / month | Rs 12,999 / month | Rs 39,999 / month |
+| Yearly (2 months free) | – | Rs 49,990 | Rs 129,990 | Rs 399,990 |
 | Channels / users / history | 3 / 1 / 30 d | 8 / 3 / 90 d | 25 / 10 / 12 mo | unlimited |
 | Daily auto-fetch, Excel & PDF, comparison, custom ranges, posts, raw export | – | ✓ | ✓ | ✓ |
 | AI insights, Battleboard, audit-log viewer, scheduled email reports | – | – | ✓ | ✓ |
 | REST API keys, white-label product name | – | – | – | ✓ |
 
-Limits and features are enforced on the server (`src/lib/billing/plans.ts` is the single catalogue). Customers upgrade through Stripe Checkout; the operator can instead fix a plan with `LICENSE_PLAN`.
+Limits, features and prices live in `src/lib/billing/plans.ts` (the single catalogue; edit the PKR prices there) and are enforced on the server. Customers pay through Safepay; the operator can instead fix a plan with `LICENSE_PLAN`.
 
 ## Quick start (development)
 
@@ -93,18 +95,19 @@ Use **Connect** next to a channel on *Pages & Fetch* (needs the OAuth app below)
 
 ## Security
 
-scrypt passwords (12+ chars) · login rate limits per IP **and** email with a 10-failure lockout · `SETUP_TOKEN` (or the CLI) to create the first owner · sessions revocable via `sessionVersion` (password change/reset, role change, disable) with 1 h tokens silently refreshed up to 12 h · forgot/reset password with single-use hashed 30-minute tokens · API tokens encrypted (AES-256-GCM, key id, rotation via `SECRETS_ENCRYPTION_KEY_PREVIOUS` + `npm run rotate-secrets`) · per-request nonce CSP, HSTS and other headers · `Origin` check on mutating requests · signed idempotent Stripe webhooks · constant-time secret checks · API keys stored as hashes · audit log of logins, invites, role changes, credential/billing changes and fetches · structured JSON logs with credentials redacted · production config validation. Set `TRUST_PROXY=true` only behind a proxy that overwrites `X-Forwarded-For`, and back up `SECRETS_ENCRYPTION_KEY` (without it stored tokens can't be decrypted).
+scrypt passwords (12+ chars) · login rate limits per IP **and** email with a 10-failure lockout · `SETUP_TOKEN` (or the CLI) to create the first owner · sessions revocable via `sessionVersion` (password change/reset, role change, disable) with 1 h tokens silently refreshed up to 12 h · forgot/reset password with single-use hashed 30-minute tokens · API tokens encrypted (AES-256-GCM, key id, rotation via `SECRETS_ENCRYPTION_KEY_PREVIOUS` + `npm run rotate-secrets`) · per-request nonce CSP, HSTS and other headers · `Origin` check on mutating requests · signed idempotent Safepay / Stripe webhooks and redirects (server-side pricing, amount-mismatch rejection) · constant-time secret checks · API keys stored as hashes · audit log of logins, invites, role changes, credential/billing changes and fetches · structured JSON logs with credentials redacted · production config validation. Set `TRUST_PROXY=true` only behind a proxy that overwrites `X-Forwarded-For`, and back up `SECRETS_ENCRYPTION_KEY` (without it stored tokens can't be decrypted).
 
 ## Operations
 
 - **Backups:** `npm run backup` → `backups/dashboard-<timestamp>.dump` (`BACKUP_ENCRYPTION_KEY` encrypts, `BACKUP_KEEP=N` prunes). **Restore:** stop the app, `npm run restore -- <file>`, start the app. Also keep `.env`.
 - **Key rotation:** set the new `SECRETS_ENCRYPTION_KEY`, move the old one to `SECRETS_ENCRYPTION_KEY_PREVIOUS`, run `npm run rotate-secrets`, then drop the old key.
-- **Billing:** create three products with monthly + yearly prices in Stripe, put the IDs in `STRIPE_PRICE_*`, add a webhook to `…/api/billing/webhook` (events listed in `.env.example`), set `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`. Displayed prices are in `src/lib/billing/plans.ts`.
+- **Billing with Safepay (Pakistan):** create a merchant account at getsafepay.com, then in the dashboard copy the **API key**, the **v1 secret key** and the **webhook shared secret** into `SAFEPAY_API_KEY`, `SAFEPAY_SECRET_KEY`, `SAFEPAY_WEBHOOK_SECRET`, and register the webhook `https://<your-domain>/api/billing/safepay/webhook`. Keep `SAFEPAY_ENVIRONMENT=sandbox` while testing (no real money moves) and switch to `production` to go live. How it works: an admin picks a plan on *Plan & Billing* → the server computes the PKR price (clients cannot set amounts) → Safepay checkout (cards and the local methods enabled on your Safepay account) → the customer is redirected back and Safepay also calls the webhook; both are signature-verified and whichever arrives first activates the plan **exactly once**. Payments are **prepaid periods** (1 month or 12 months): renewing the same plan stacks onto the remaining time, upgrading credits the unused days, a lower plan can be chosen after the period ends, and when a period ends the workspace falls back to Free (data is kept, paid features lock). Admins are emailed 7 days before expiry (sent by the daily `/api/cron/reports` call) and see a payment history on the billing page. **Before going live, run one sandbox payment and confirm the amount on the Safepay page equals the price shown here;** if it is 100× off, set `SAFEPAY_AMOUNT_UNIT=minor`.
+- **Billing with Stripe (optional):** for international cards, create three products with monthly + yearly prices, put the IDs in `STRIPE_PRICE_*`, add a webhook to `…/api/billing/webhook` (events in `.env.example`) and set `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`. If Safepay is configured it is the default; a workspace is billed by one provider at a time.
 - **Migrations:** `npx prisma migrate dev --name …` in development, `npx prisma migrate deploy` in production; never `db push` a shipped schema. This repository starts from a single PostgreSQL baseline migration (an earlier SQLite prototype is not migrated automatically).
 
 ## Data & privacy
 
-Stored: team accounts (scrypt hashes), encrypted channel credentials, daily platform metrics, posts and their metrics, GA4 aggregates, audit log, subscription IDs. Card data never touches the app (Stripe). Sent out: aggregate selected-period metrics to the configured AI provider (never post text or credentials), email content to Resend, API calls to the platforms, admin email + plan choice to Stripe. Removing a channel deletes its data; `npm run db:clear-data` wipes everything except the owner.
+Stored: team accounts (scrypt hashes), encrypted channel credentials, daily platform metrics, posts and their metrics, GA4 aggregates, audit log, subscription IDs. Card data never touches the app (Safepay / Stripe collect it); we store only order numbers, amounts and statuses. Sent out: aggregate selected-period metrics to the configured AI provider (never post text or credentials), email content to Resend, API calls to the platforms, admin email + plan choice to Stripe; order amount and our order number to Safepay. Removing a channel deletes its data; `npm run db:clear-data` wipes everything except the owner.
 
 ## Licence
 

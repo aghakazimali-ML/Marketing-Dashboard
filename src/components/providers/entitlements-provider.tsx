@@ -6,17 +6,28 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { apiRequest } from "@/lib/client/api";
 import { DASHBOARD_NAME } from "@/lib/brand";
 
+export type Quote =
+  | { ok: true; amountPkr: number; creditPkr: number; kind: "new" | "renewal" | "upgrade" }
+  | { ok: false; reason: string };
+
 export type Entitlements = {
   plan: Plan;
   brandName: string;
   status: string;
-  source: "license" | "stripe" | "default";
+  source: "license" | "safepay" | "stripe" | "default";
   interval: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   hasStripeCustomer: boolean;
   usage: { channels: number; seats: number; pendingInvites: number };
-  billing: { configured: boolean; managedByLicense: boolean; purchasable: string[] };
+  billing: {
+    provider: "SAFEPAY" | "STRIPE" | null;
+    safepay: { environment: "sandbox" | "production" } | null;
+    quotes: Record<string, Record<"month" | "year", Quote>> | null;
+    configured: boolean;
+    managedByLicense: boolean;
+    purchasable: string[];
+  };
 };
 
 type Ctx = {

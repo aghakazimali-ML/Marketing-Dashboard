@@ -18,11 +18,13 @@ const PUBLIC_PATHS = [
   "/api/cron/sync",
   "/api/cron/reports",
   "/api/billing/webhook",
+  "/api/billing/safepay/webhook",
+  "/api/billing/safepay/return", // customer redirect from Safepay, authenticated by its signature
   "/api/v1", // API keys
 ];
 
 /** Machine-to-machine endpoints: no cookie, so no CSRF concern and no Origin header. */
-const NO_ORIGIN_CHECK = ["/api/cron/", "/api/billing/webhook", "/api/v1/"];
+const NO_ORIGIN_CHECK = ["/api/cron/", "/api/billing/webhook", "/api/billing/safepay/webhook", "/api/billing/safepay/return", "/api/v1/"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
