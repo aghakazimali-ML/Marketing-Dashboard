@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth/authorization";
 import { getWorkspace, licensedPlan } from "@/lib/billing/workspace";
 import { currentPeriod, quotePurchase } from "@/lib/billing/payments";
 import { buildCheckoutUrl, initTracker, safepayConfig, SafepayError } from "@/lib/billing/safepay";
+import { resolveBillingContext } from "@/lib/billing/region";
 import { audit } from "@/lib/audit";
 import { rateLimit } from "@/lib/security/rate-limit";
 import { logger, errorFields } from "@/lib/logger";
@@ -30,9 +31,14 @@ export async function POST(req: NextRequest) {
   const body = schema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "Choose a plan and billing period." }, { status: 400 });
 
+  // The provider follows the visitor's location (decided server-side, never by the client).
+  const ctx = await resolveBillingContext(req);
+  if (ctx.provider !== "SAFEPAY") {
+    return NextResponse.json({ error: "Safepay is for customers in Pakistan. Use the international checkout instead." }, { status: 409 });
+  }
   const ws = await getWorkspace();
-  if (ws.source === "stripe") {
-    return NextResponse.json({ error: "Your plan is billed through Stripe. Manage it from the billing portal." }, { status: 409 });
+  if (ws.source === "lemonsqueezy") {
+    return NextResponse.json({ error: "Your plan is billed through Lemon Squeezy. Manage it from the billing portal." }, { status: 409 });
   }
 
   const quote = quotePurchase(await currentPeriod(), body.data.plan, body.data.interval);

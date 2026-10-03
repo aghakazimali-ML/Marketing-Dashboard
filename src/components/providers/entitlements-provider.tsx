@@ -10,23 +10,29 @@ export type Quote =
   | { ok: true; amountPkr: number; creditPkr: number; kind: "new" | "renewal" | "upgrade" }
   | { ok: false; reason: string };
 
+type PlanKey = "STARTER" | "PRO" | "EXCLUSIVE";
+
 export type Entitlements = {
   plan: Plan;
   brandName: string;
   status: string;
-  source: "license" | "safepay" | "stripe" | "default";
+  source: "license" | "safepay" | "lemonsqueezy" | "default";
   interval: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
-  hasStripeCustomer: boolean;
+  hasSubscription: boolean;
   usage: { channels: number; seats: number; pendingInvites: number };
   billing: {
-    provider: "SAFEPAY" | "STRIPE" | null;
-    safepay: { environment: "sandbox" | "production" } | null;
-    quotes: Record<string, Record<"month" | "year", Quote>> | null;
+    /** Detected from the visitor's IP; never chosen by the user. */
+    region: "PK" | "INTL";
+    country: string | null;
+    currency: "PKR" | "USD";
+    provider: "SAFEPAY" | "LEMONSQUEEZY";
+    locked: boolean;
+    safepay: { environment: "sandbox" | "production"; quotes: Record<PlanKey, Record<"month" | "year", Quote>> | null } | null;
+    lemonsqueezy: { testMode: boolean; available: Record<PlanKey, Record<"month" | "year", boolean>> | null } | null;
     configured: boolean;
     managedByLicense: boolean;
-    purchasable: string[];
   };
 };
 

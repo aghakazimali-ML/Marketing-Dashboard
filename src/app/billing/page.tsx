@@ -12,7 +12,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useEntitlements } from "@/components/providers/entitlements-provider";
 import { useToast } from "@/components/providers/toast-provider";
 import { apiRequest } from "@/lib/client/api";
-import { FEATURE_LABELS, PLANS, PLAN_ORDER, formatPkr, planRank, type FeatureKey, type PlanId } from "@/lib/billing/plans";
+import { FEATURE_LABELS, PLANS, PLAN_ORDER, formatMoney, formatPkr, planPrice, planRank, type FeatureKey, type PlanId } from "@/lib/billing/plans";
 import { WorkspaceSettings } from "@/components/billing/workspace-settings";
 
 export default function BillingPage() {
@@ -67,7 +67,11 @@ function BillingContent() {
   if (!data) return <ErrorState message="Could not load billing information." onRetry={() => void reload()} />;
 
   const managedByLicense = data.billing.managedByLicense;
-  const canBuy = data.billing.configured && !managedByLicense;
+  const b = data.billing;
+  const currency = b.currency;
+  const sp = b.provider === "SAFEPAY" && !managedByLicense ? b.safepay : null;
+  const ls = b.provider === "LEMONSQUEEZY" && !managedByLicense ? b.lemonsqueezy : null;
+  const countryName = b.country ? new Intl.DisplayNames(["en"], { type: "region" }).of(b.country) : null;
 
   return (
     <div className="space-y-6">
@@ -84,20 +88,24 @@ function BillingContent() {
             {data.status === "past_due" ? " — payment failed, please update your card." : ""}
           </p>
         ) : null}
-        {isAdmin && data.hasStripeCustomer && data.billing.configured && !managedByLicense ? (
-          <button type="button" disabled={busy === "portal"} onClick={() => void go("/api/billing/portal", {}, "portal")} className="mt-4 rounded-md border border-line bg-card px-4 py-2 text-sm font-medium hover:bg-sand-100 disabled:opacity-50">
-            {busy === "portal" ? "Opening…" : "Manage billing & invoices"}
+        {isAdmin && data.hasSubscription && !managedByLicense ? (
+          <button type="button" disabled={busy === "portal"} onClick={() => void go("/api/billing/lemonsqueezy/portal", {}, "portal")} className="mt-4 rounded-md border border-line bg-card px-4 py-2 text-sm font-medium hover:bg-sand-100 disabled:opacity-50">
+            {busy === "portal" ? "Opening…" : "Manage subscription & invoices"}
           </button>
         ) : null}
       </SectionCard>
 
       {error ? <ErrorState message={error} /> : null}
-      {data.billing.safepay?.environment === "sandbox" ? (
+      {sp?.environment === "sandbox" || ls?.testMode ? (
         <p role="status" className="rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
-          Safepay is in <strong>sandbox</strong> mode: test payments only, no real money is charged.
+          {sp ? "Safepay" : "Lemon Squeezy"} is in <strong>{sp ? "sandbox" : "test"}</strong> mode: test payments only, no real money is charged.
         </p>
       ) : null}
-      {!data.billing.configured && !managedByLicense ? (
+      <p className="text-center text-xs text-muted">
+        Prices are shown in {currency === "PKR" ? "Pakistani rupees (PKR)" : "US dollars (USD)"}
+        {countryName ? ` for ${countryName}` : ""}, based on your location. {b.provider === "SAFEPAY" ? "Pay with Safepay." : "Pay securely with Lemon Squeezy (taxes handled for you)."}
+      </p>
+      {!b.configured && !managedByLicense ? (
         <p role="status" className="rounded-md border border-line bg-sand-50 px-3 py-2 text-sm text-muted">
           Online payments are not configured on this installation, so upgrades are handled by the operator. Contact them to change your plan.
         </p>
@@ -115,9 +123,10 @@ function BillingContent() {
         {PLAN_ORDER.map((id) => {
           const p = PLANS[id];
           const isCurrent = id === current;
-          const price = interval === "month" ? p.pricePkrMonthly : Math.round(p.pricePkrYearly / 12);
+          const price = interval === "month" ? planPrice(id, "month", currency) : Math.round(planPrice(id, "year", currency) / 12);
           const upgrade = planRank(id) > planRank(current as PlanId);
-          const safepayQuote = data.billing.provider === "SAFEPAY" && !managedByLicense ? data.billing.quotes?.[id]?.[interval] : undefined;
+          const safepayQuote = sp?.quotes?.[id as "STARTER" | "PRO" | "EXCLUSIVE"]?.[interval];
+          const lsAvailable = ls?.available?.[id as "STARTER" | "PRO" | "EXCLUSIVE"]?.[interval];
           return (
             <div key={id} className={clsx("crazy-card flex flex-col rounded-xl p-5", isCurrent && "ring-2 ring-teal-500", id === "PRO" && "border-teal-500/50")}>
               <div className="flex items-center justify-between">
@@ -126,7 +135,7 @@ function BillingContent() {
               </div>
               <p className="mt-1 text-xs text-muted">{p.tagline}</p>
               <p className="mt-4 font-display text-3xl text-navy-900">
-                {formatPkr(price)}
+                {formatMoney(price, currency)}
                 {price > 0 ? <span className="text-sm font-normal text-muted"> /month{interval === "year" ? ", billed yearly" : ""}</span> : null}
               </p>
               <ul className="mt-4 flex-1 space-y-1.5 text-sm">
@@ -149,13 +158,20 @@ function BillingContent() {
                   ) : (
                     <p className="mt-5 text-center text-xs text-muted">{safepayQuote.reason}</p>
                   )
-                ) : isAdmin && canBuy && upgrade && !data.hasStripeCustomer && data.billing.provider !== "SAFEPAY" ? (
-                  <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/checkout", { plan: id, interval }, `buy-${id}`)} className="mt-5 rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50">
-                    {busy === `buy-${id}` ? "Redirecting…" : `Upgrade to ${p.name}`}
-                  </button>
-                ) : isAdmin && canBuy && data.hasStripeCustomer && !isCurrent ? (
-                  <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/portal", {}, "portal")} className="mt-5 rounded-md border border-line bg-card px-4 py-2.5 text-sm font-medium hover:bg-sand-100 disabled:opacity-50">
-                    Change plan in billing portal
+                ) : isAdmin && ls && !data.hasSubscription && upgrade ? (
+                  lsAvailable ? (
+                    <div className="mt-5 space-y-1.5">
+                      <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/lemonsqueezy/checkout", { plan: id, interval }, `buy-${id}`)} className="w-full rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50">
+                        {busy === `buy-${id}` ? "Redirecting…" : `Subscribe · ${formatMoney(planPrice(id, interval, "USD"), "USD")}/${interval === "year" ? "year" : "month"}`}
+                      </button>
+                      <p className="text-center text-[11px] text-muted">Renews automatically. Cancel any time from Manage subscription.</p>
+                    </div>
+                  ) : (
+                    <p className="mt-5 text-center text-xs text-muted">This plan is not available for purchase yet.</p>
+                  )
+                ) : isAdmin && ls && data.hasSubscription && !isCurrent ? (
+                  <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/lemonsqueezy/portal", {}, "portal")} className="mt-5 rounded-md border border-line bg-card px-4 py-2.5 text-sm font-medium hover:bg-sand-100 disabled:opacity-50">
+                    Change plan in Manage subscription
                   </button>
                 ) : (
                   <p className="mt-5 text-center text-xs text-muted">{isCurrent ? "Your current plan" : !isAdmin ? "Ask an administrator to upgrade" : "Contact the operator to upgrade"}</p>
@@ -204,7 +220,7 @@ function BillingContent() {
         </div>
       </SectionCard>
 
-      {isAdmin && data.billing.provider === "SAFEPAY" ? <PaymentHistory /> : null}
+      {isAdmin && b.provider === "SAFEPAY" ? <PaymentHistory /> : null}
       {isAdmin ? <WorkspaceSettings /> : null}
     </div>
   );
