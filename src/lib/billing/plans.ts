@@ -74,8 +74,8 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "STARTER",
     name: "Starter",
     tagline: "For small teams that report every month",
-    priceMonthly: 19,
-    priceYearly: 190,
+    priceMonthly: 7,
+    priceYearly: 84,
     limits: { channels: 8, seats: 3, historyDays: 90, aiInsightsPerDay: 0, apiKeys: 0 },
     features: {
       ...none,
@@ -97,8 +97,8 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "PRO",
     name: "Pro",
     tagline: "For agencies and growing marketing teams",
-    priceMonthly: 49,
-    priceYearly: 490,
+    priceMonthly: 16,
+    priceYearly: 192,
     limits: { channels: 25, seats: 10, historyDays: 365, aiInsightsPerDay: 30, apiKeys: 0 },
     features: {
       ...none,
@@ -120,8 +120,8 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "EXCLUSIVE",
     name: "Exclusive",
     tagline: "Everything, with no limits",
-    priceMonthly: 149,
-    priceYearly: 1490,
+    priceMonthly: 49,
+    priceYearly: 588,
     limits: { channels: null, seats: null, historyDays: null, aiInsightsPerDay: null, apiKeys: 5 },
     features: {
       scheduledFetch: true, excelPdfExport: true, periodComparison: true, customRange: true,

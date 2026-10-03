@@ -101,7 +101,7 @@ function BillingContent() {
       <div className="flex items-center justify-center gap-2" role="group" aria-label="Billing interval">
         {(["month", "year"] as const).map((i) => (
           <button key={i} type="button" aria-pressed={interval === i} onClick={() => setInterval_(i)} className={clsx("rounded-md px-4 py-2 text-sm font-medium", interval === i ? "bg-navy-900 text-on-accent" : "border border-line bg-card hover:bg-sand-100")}>
-            {i === "month" ? "Monthly" : "Yearly (2 months free)"}
+            {i === "month" ? "Monthly" : "Yearly"}
           </button>
         ))}
       </div>
