@@ -9,9 +9,9 @@ A self-hostable SaaS-style analytics product for marketing teams, **built for th
 
 | | Free | Starter | Pro | Exclusive |
 |---|---|---|---|---|
-| Price in Pakistan (PKR) | Rs 0 | Rs 4,999 / month | Rs 12,999 / month | Rs 39,999 / month |
-| Yearly, PKR (2 months free) | – | Rs 49,990 | Rs 129,990 | Rs 399,990 |
-| International (USD) | $0 | $19 / month · $190 / year | $49 / month · $490 / year | $149 / month · $1,490 / year |
+| Price in Pakistan (PKR) | Rs 0 | Rs 1,900 / month | Rs 5,250 / month *(special offer, was Rs 7,500)* | Rs 9,600 / month *(special offer, was Rs 14,000)* |
+| Yearly, PKR (2 months free) | – | Rs 19,000 | Rs 52,500 | Rs 96,000 |
+| International (USD) | $0 | $7 / month · $70 / year | $19 / month · $190 / year | $35 / month · $350 / year |
 | Channels / users / history | 3 / 1 / 30 d | 8 / 3 / 90 d | 25 / 10 / 12 mo | unlimited |
 | Daily auto-fetch, Excel & PDF, comparison, custom ranges, posts, raw export | – | ✓ | ✓ | ✓ |
 | AI insights, Battleboard, audit-log viewer, scheduled email reports | – | – | ✓ | ✓ |

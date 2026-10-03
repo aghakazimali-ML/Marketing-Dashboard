@@ -45,6 +45,8 @@ export type Plan = {
   /** Price in US dollars for international customers (Lemon Squeezy variants must be set to the same amounts). */
   priceUsdMonthly: number;
   priceUsdYearly: number;
+  /** Regular (pre-offer) monthly PKR price, shown struck through beside the Pakistan special-offer price. */
+  pkrRegularMonthly?: number;
   limits: Limits;
   features: Record<FeatureKey, boolean>;
   highlights: string[];
@@ -80,10 +82,10 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "STARTER",
     name: "Starter",
     tagline: "For small teams that report every month",
-    pricePkrMonthly: 4999,
-    pricePkrYearly: 49990,
-    priceUsdMonthly: 19,
-    priceUsdYearly: 190,
+    pricePkrMonthly: 1900,
+    pricePkrYearly: 19000,
+    priceUsdMonthly: 7,
+    priceUsdYearly: 70,
     limits: { channels: 8, seats: 3, historyDays: 90, aiInsightsPerDay: 0, apiKeys: 0 },
     features: {
       ...none,
@@ -105,10 +107,11 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "PRO",
     name: "Pro",
     tagline: "For agencies and growing marketing teams",
-    pricePkrMonthly: 12999,
-    pricePkrYearly: 129990,
-    priceUsdMonthly: 49,
-    priceUsdYearly: 490,
+    pricePkrMonthly: 5250,
+    pricePkrYearly: 52500,
+    pkrRegularMonthly: 7500,
+    priceUsdMonthly: 19,
+    priceUsdYearly: 190,
     limits: { channels: 25, seats: 10, historyDays: 365, aiInsightsPerDay: 30, apiKeys: 0 },
     features: {
       ...none,
@@ -130,10 +133,11 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "EXCLUSIVE",
     name: "Exclusive",
     tagline: "Everything, with no limits",
-    pricePkrMonthly: 39999,
-    pricePkrYearly: 399990,
-    priceUsdMonthly: 149,
-    priceUsdYearly: 1490,
+    pricePkrMonthly: 9600,
+    pricePkrYearly: 96000,
+    pkrRegularMonthly: 14000,
+    priceUsdMonthly: 35,
+    priceUsdYearly: 350,
     limits: { channels: null, seats: null, historyDays: null, aiInsightsPerDay: null, apiKeys: 5 },
     features: {
       scheduledFetch: true, excelPdfExport: true, periodComparison: true, customRange: true,

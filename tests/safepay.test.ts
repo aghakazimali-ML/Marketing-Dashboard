@@ -57,8 +57,8 @@ describe("signatures (from the official SDK)", () => {
     expect(verifyWebhookSignature(data, null, "wh-secret")).toBe(false);
   });
   it("reads the notification fields", () => {
-    expect(readNotification({ notification: { tracker: "track_1", state: "PAID", reference: "r1", amount: 4999, metadata: { order_id: "ord_1" } } })).toEqual({
-      tracker: "track_1", state: "PAID", reference: "r1", orderId: "ord_1", amount: 4999,
+    expect(readNotification({ notification: { tracker: "track_1", state: "PAID", reference: "r1", amount: 1900, metadata: { order_id: "ord_1" } } })).toEqual({
+      tracker: "track_1", state: "PAID", reference: "r1", orderId: "ord_1", amount: 1900,
     });
   });
 });
@@ -72,17 +72,17 @@ describe("Safepay client", () => {
   it("inits a tracker with the API key and whole-rupee amount, and builds the checkout url", async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ data: { token: "beacon_123" } }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    const token = await initTracker(cfg, 4999);
+    const token = await initTracker(cfg, 1900);
     expect(token).toBe("beacon_123");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://sandbox.api.getsafepay.com/order/v1/init");
-    expect(JSON.parse(String(init.body))).toEqual({ client: "sec_key", amount: 4999, currency: "PKR", environment: "sandbox" });
+    expect(JSON.parse(String(init.body))).toEqual({ client: "sec_key", amount: 1900, currency: "PKR", environment: "sandbox" });
     const link = new URL(buildCheckoutUrl(cfg, { token, orderId: "ord_1", redirectUrl: "https://x/r", cancelUrl: "https://x/c" }));
     expect(link.origin + link.pathname).toBe("https://sandbox.api.getsafepay.com/checkout/pay");
     expect(link.searchParams.get("beacon")).toBe("beacon_123");
     expect(link.searchParams.get("order_id")).toBe("ord_1");
     expect(link.searchParams.get("webhooks")).toBe("true");
-    expect(toSafepayAmount(4999, "minor")).toBe(499900);
+    expect(toSafepayAmount(1900, "minor")).toBe(190000);
   });
   it("uses the production hosts in production", () => {
     expect(buildCheckoutUrl({ ...cfg, env: "production" }, { token: "t", orderId: "o", redirectUrl: "r", cancelUrl: "c" })).toContain("https://getsafepay.com/checkout/pay?");
@@ -115,15 +115,15 @@ describe("pricing & periods", () => {
     expect(addPeriod(new Date("2026-10-10T00:00:00Z"), "year").toISOString().slice(0, 10)).toBe("2027-10-10");
   });
   it("matches reported amounts in the configured unit", () => {
-    expect(amountMatches(4999, 4999, "major")).toBe(true);
-    expect(amountMatches(4999, 499900, "minor")).toBe(true);
-    expect(amountMatches(4999, 100, "major")).toBe(false);
-    expect(amountMatches(4999, null, "major")).toBe(true);
+    expect(amountMatches(1900, 1900, "major")).toBe(true);
+    expect(amountMatches(1900, 190000, "minor")).toBe(true);
+    expect(amountMatches(1900, 100, "major")).toBe(false);
+    expect(amountMatches(1900, null, "major")).toBe(true);
   });
 });
 
 async function pending(over: Record<string, unknown> = {}) {
-  return prisma.payment.create({ data: { orderId: `ord_${Math.random().toString(36).slice(2)}`, plan: "PRO", interval: "month", amountPkr: 12999, tracker: `track_${Math.random().toString(36).slice(2)}`, createdBy: "a@x.com", ...over } });
+  return prisma.payment.create({ data: { orderId: `ord_${Math.random().toString(36).slice(2)}`, plan: "PRO", interval: "month", amountPkr: 5250, tracker: `track_${Math.random().toString(36).slice(2)}`, createdBy: "a@x.com", ...over } });
 }
 
 describe("applying a payment", () => {
@@ -185,7 +185,7 @@ describe("webhook route", () => {
   });
   it("applies a PAID notification once and is safe to replay", async () => {
     const p = await pending();
-    const data = { notification: { tracker: p.tracker, state: "PAID", reference: "ref_1", amount: 12999 } };
+    const data = { notification: { tracker: p.tracker, state: "PAID", reference: "ref_1", amount: 5250 } };
     expect((await send(data)).status).toBe(200);
     expect((await send(data)).status).toBe(200);
     expect((await getWorkspace()).planId).toBe("PRO");
