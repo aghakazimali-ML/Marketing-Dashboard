@@ -115,7 +115,7 @@ export function DataTable<T>({
             const id = rowKey(row);
             return (
               <tr key={id} className={clsx("border-t border-line/80", bestId === id && "bg-teal-500/10")}>
-                {columns.map((col) => (
+                {columns.map((col, ci) => (
                   <td
                     key={col.key}
                     className={clsx(
@@ -126,6 +126,7 @@ export function DataTable<T>({
                     )}
                   >
                     {col.render(row)}
+                    {ci === 0 && bestId === id ? <span className="sr-only"> (highest value)</span> : null}
                   </td>
                 ))}
               </tr>
