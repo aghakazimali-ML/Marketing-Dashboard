@@ -188,6 +188,7 @@ describe("misc hygiene", () => {
     const strong = validateEnv({
       NODE_ENV: "production", AUTH_SECRET: "a".repeat(40), SECRETS_ENCRYPTION_KEY: "b".repeat(40),
       APP_BASE_URL: "https://dash.example.com", CRON_SECRET: "c".repeat(30),
+      DATABASE_URL: "postgresql://u:p@db:5432/d",
     } as unknown as NodeJS.ProcessEnv);
     expect(strong.ok).toBe(true);
   });

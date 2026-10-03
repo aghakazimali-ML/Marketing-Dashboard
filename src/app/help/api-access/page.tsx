@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = { title: "API access setup guide" };
 
-/** Short in-app version of docs/SETUP_API_ACCESS.md. */
+/** In-app guide for connecting channels (full version: README, "Connecting your channels"). */
 export default function ApiAccessHelp() {
   const h2 = "mt-8 font-display text-xl text-navy-900";
   return (
@@ -10,7 +10,7 @@ export default function ApiAccessHelp() {
       <article className="crazy-card mx-auto max-w-3xl rounded-2xl p-8 text-sm leading-relaxed text-ink">
         <Link href="/sync" className="text-xs font-medium text-teal-600 hover:underline">← Back to Pages &amp; Fetch</Link>
         <h1 className="mt-3 font-display text-3xl text-navy-900">Connect your channels</h1>
-        <p className="mt-2 text-muted">The easiest way is the <strong>Connect</strong> button next to a channel. It needs OAuth app credentials configured by whoever runs this installation (see <code>docs/SETUP_API_ACCESS.md</code>). You can always paste credentials manually under <em>Advanced</em>.</p>
+        <p className="mt-2 text-muted">The easiest way is the <strong>Connect</strong> button next to a channel. It needs OAuth app credentials configured by whoever runs this installation (see the README section “Connecting your channels”). You can always paste credentials manually under <em>Advanced</em>.</p>
 
         <h2 className={h2}>Google Analytics 4</h2>
         <ol className="mt-2 list-decimal space-y-1 pl-5">

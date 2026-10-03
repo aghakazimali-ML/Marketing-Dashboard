@@ -1,10 +1,9 @@
 import "dotenv/config";
-import path from "node:path";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
-/** Bump when Channel / schema fields change so hot-reload drops a stale client. */
-const PRISMA_SCHEMA_VERSION = 6;
+/** Bump when the schema changes so hot-reload drops a stale client. */
+const PRISMA_SCHEMA_VERSION = 7;
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -12,10 +11,11 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const url =
-    process.env.DATABASE_URL ??
-    `file:${path.join(process.cwd(), "prisma", "dev.db")}`;
-  const adapter = new PrismaBetterSqlite3({ url });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString || !/^postgres(ql)?:\/\//.test(connectionString)) {
+    throw new Error("DATABASE_URL must be a PostgreSQL connection string (postgresql://user:pass@host:5432/db).");
+  }
+  const adapter = new PrismaPg({ connectionString, max: Number(process.env.DATABASE_POOL_MAX ?? 10) });
   return new PrismaClient({ adapter });
 }
 
