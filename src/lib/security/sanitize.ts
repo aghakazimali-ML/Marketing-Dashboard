@@ -20,3 +20,8 @@ export function safeClientError(status: number, fallback = "Request failed") {
   if (status >= 500) return fallback;
   return `Upstream API error (${status})`;
 }
+
+/** Prefix text that spreadsheet apps could evaluate as a formula. */
+export function safeSpreadsheetText(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}

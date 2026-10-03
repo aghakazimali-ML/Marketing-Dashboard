@@ -103,67 +103,17 @@ function ReportsContent() {
     try {
       const res = await fetch(exportUrl);
       const report = (await res.json()) as Report;
-      const XLSX = await import("xlsx");
-      const kpiSheet = [
-        ["Metric", "Value"],
-        ["Followers", report.kpi.followers],
-        ["Impressions", report.kpi.impressions],
-        ["Engagement", report.kpi.engagement],
-        ["Clicks", report.kpi.clicks],
-        ["New Followers", report.kpi.newFollowers],
-        ["Website Users", report.kpi.websiteUsers],
-        ["Sessions", report.kpi.websiteSessions],
-        ["Conversions", report.kpi.conversions],
-      ];
-      const allPagesSheet = [
-        ["Platform", "Page", "Followers", "New", "Impressions", "Engagement", "ER%", "Clicks", "Growth%"],
-        ...report.allPagesComparison.map((r) => [
-          r.platform,
-          r.name,
-          r.followers,
-          r.newFollowers,
-          r.impressions,
-          r.engagement,
-          r.engagementRate,
-          r.clicks,
-          r.growthPct,
-        ]),
-      ];
-      const postsSheet = [
-        ["Title", "Platform", "Channel", "Engagement", "Likes", "Comments", "Shares", "ER%", "Clicks"],
-        ...report.topPosts.map((p) => [
-          p.title,
-          p.platform,
-          p.channelName,
-          p.engagement,
-          p.likes,
-          p.comments,
-          p.shares,
-          p.engagementRate,
-          p.clicks,
-        ]),
-      ];
-      const trafficSheet = [
-        ["Source", "Users", "Sessions"],
-        ...report.website.trafficSources.map((t) => [
-          t.source,
-          t.users,
-          t.sessions,
-        ]),
-      ];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(kpiSheet), "KPI");
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allPagesSheet), "All Pages");
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(postsSheet), "Top Posts");
-      if (trafficSheet.length > 1) {
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(trafficSheet), "Traffic Sources");
-      }
-      XLSX.utils.book_append_sheet(
-        wb,
-        XLSX.utils.aoa_to_sheet([["Executive Summary"], [report.executiveSummary]]),
-        "Summary"
-      );
-      XLSX.writeFile(wb, `marketing-report-${format(range.start, "yyyyMMdd")}.xlsx`);
+      const { buildReportWorkbook } = await import("@/lib/reports/excel");
+      const buffer = await buildReportWorkbook(report);
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `marketing-report-${format(range.start, "yyyyMMdd")}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
     } finally {
       setBusy(null);
     }
