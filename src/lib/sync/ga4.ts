@@ -1,93 +1,133 @@
-import { prisma } from "@/lib/db";
-import { Platform } from "@/generated/prisma/client";
-import { startOfDay, endOfDay, subDays } from "date-fns";
-import { resolveChannelToken } from "@/lib/sync/credentials";
+import type { ChannelSyncContext, ChannelSyncResult } from "@/lib/sync/types";
+import { API_VERSIONS } from "@/lib/metrics/catalog";
+import { dayKey, parseDayString } from "@/lib/metrics/dates";
+import { apiJson } from "@/lib/sync/http";
+import {
+  upsertBreakdowns,
+  upsertWebsiteDays,
+  type BreakdownInput,
+  type WebsiteDayInput,
+} from "@/lib/sync/store";
 
-/**
- * GA4 Data API sync — uses Website channel externalId as property ID
- * and accessToken (or GA4_ACCESS_TOKEN / GA4_PROPERTY_ID from .env).
- */
-export async function syncGA4() {
-  const channel = await prisma.channel.findFirst({
-    where: { platform: Platform.WEBSITE, isActive: true },
+export const GA4_SOURCE = `ga4:${API_VERSIONS.GA4}`;
+
+type Report = {
+  dimensionHeaders?: { name: string }[];
+  metricHeaders?: { name: string }[];
+  rows?: { dimensionValues: { value: string }[]; metricValues: { value: string }[] }[];
+};
+
+export function reportRows(r: Report) {
+  const dims = (r.dimensionHeaders ?? []).map((d) => d.name);
+  const mets = (r.metricHeaders ?? []).map((m) => m.name);
+  return (r.rows ?? []).map((row) => {
+    const d: Record<string, string> = {};
+    const m: Record<string, number> = {};
+    dims.forEach((n, i) => (d[n] = row.dimensionValues[i]?.value ?? ""));
+    mets.forEach((n, i) => (m[n] = Number(row.metricValues[i]?.value ?? NaN)));
+    return { d, m };
   });
+}
 
-  const propertyId =
-    channel?.externalId?.trim() || process.env.GA4_PROPERTY_ID?.trim();
-  const accessToken = resolveChannelToken(
-    channel?.accessToken,
-    process.env.GA4_ACCESS_TOKEN
-  );
-  const canLive = Boolean(propertyId) && Boolean(accessToken);
+const finite = (n: number | undefined) => (n === undefined || !Number.isFinite(n) ? null : n);
 
-  if (!canLive) {
-    return {
-      records: 0,
-      message:
-        "Skipped: configure the GA4 property ID and access token. No data was written.",
-      mode: "unconfigured" as const,
-    };
+export function daysFromReport(r: Report): WebsiteDayInput[] {
+  const out: WebsiteDayInput[] = [];
+  for (const { d, m } of reportRows(r)) {
+    const date = parseDayString(d.date ?? "");
+    if (!date) continue;
+    out.push({
+      date,
+      users: finite(m.activeUsers),
+      sessions: finite(m.sessions),
+      newUsers: finite(m.newUsers),
+      // GA4 returns bounce rate as a 0-1 fraction.
+      bounceRate: m.bounceRate !== undefined && Number.isFinite(m.bounceRate) ? Number((m.bounceRate * 100).toFixed(2)) : null,
+      avgSessionDurationSec: finite(m.averageSessionDuration),
+      conversions: finite(m.keyEvents),
+    });
   }
+  return out;
+}
 
-  const end = new Date();
-  const start = subDays(end, 6);
-  const body = {
-    dateRanges: [
+export async function syncGA4Channel(ctx: ChannelSyncContext): Promise<ChannelSyncResult> {
+  const { channel, token } = ctx;
+  const propertyId = (channel.externalId?.trim() || process.env.GA4_PROPERTY_ID?.trim() || "").replace(/^properties\//, "");
+  if (!token) throw new Error("missing credentials");
+  if (!/^\d{1,20}$/.test(propertyId)) throw new Error("invalid GA4 property ID (use the numeric ID)");
+
+  const url = `https://analyticsdata.googleapis.com/${API_VERSIONS.GA4}/properties/${propertyId}:runReport`;
+  const run = (body: object, label: string) =>
+    apiJson<Report>(
+      url,
       {
-        startDate: start.toISOString().slice(0, 10),
-        endDate: end.toISOString().slice(0, 10),
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dateRanges: [{ startDate: dayKey(ctx.from), endDate: dayKey(ctx.today) }],
+          limit: 10000,
+          ...body,
+        }),
       },
-    ],
-    metrics: [
-      { name: "activeUsers" },
-      { name: "sessions" },
-      { name: "newUsers" },
-      { name: "bounceRate" },
-      { name: "averageSessionDuration" },
-      { name: "conversions" },
-    ],
-  };
+      { label, authStatuses: [403] }
+    );
+  const notes: string[] = [];
 
-  const res = await fetch(
-    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+  const daily = await run(
     {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
+      dimensions: [{ name: "date" }],
+      metrics: ["activeUsers", "sessions", "newUsers", "bounceRate", "averageSessionDuration", "keyEvents"].map((name) => ({ name })),
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    },
+    "GA4 daily report"
   );
+  let records = await upsertWebsiteDays(channel.id, GA4_SOURCE, daysFromReport(daily));
 
-  if (!res.ok) {
-    throw new Error(`GA4 API ${res.status}: ${await res.text()}`);
+  try {
+    const sources = await run(
+      {
+        dimensions: [{ name: "date" }, { name: "sessionDefaultChannelGroup" }],
+        metrics: [{ name: "sessions" }, { name: "activeUsers" }],
+      },
+      "GA4 traffic sources"
+    );
+    const rows: BreakdownInput[] = [];
+    for (const { d, m } of reportRows(sources)) {
+      const date = parseDayString(d.date ?? "");
+      if (date) rows.push({ date, kind: "SOURCE", key: d.sessionDefaultChannelGroup || "(not set)", sessions: finite(m.sessions), users: finite(m.activeUsers) });
+    }
+    records += await upsertBreakdowns(channel.id, rows);
+  } catch (e) {
+    if (e instanceof Error && e.name === "AuthError") throw e;
+    notes.push("traffic sources unavailable");
   }
 
-  const json = (await res.json()) as {
-    rows?: { metricValues: { value: string }[] }[];
-  };
-  const values = json.rows?.[0]?.metricValues ?? [];
-  const num = (i: number) => Number(values[i]?.value ?? 0);
-
-  await prisma.websiteSnapshot.create({
-    data: {
-      syncedAt: new Date(),
-      periodStart: startOfDay(start),
-      periodEnd: endOfDay(end),
-      users: num(0),
-      sessions: num(1),
-      newUsers: num(2),
-      bounceRate: num(3) <= 1 ? num(3) * 100 : num(3),
-      avgSessionDurationSec: num(4),
-      conversions: num(5),
-      goalCompletions: num(5),
-    },
-  });
-
-  return {
-    records: 1,
-    message: "Fetched GA4 website snapshot from live Data API.",
-    mode: "live" as const,
-  };
+  try {
+    const pages = await run(
+      {
+        dimensions: [{ name: "date" }, { name: "landingPagePlusQueryString" }],
+        metrics: [{ name: "sessions" }, { name: "bounceRate" }],
+        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+        limit: 5000,
+      },
+      "GA4 landing pages"
+    );
+    const rows: BreakdownInput[] = [];
+    for (const { d, m } of reportRows(pages)) {
+      const date = parseDayString(d.date ?? "");
+      if (!date) continue;
+      rows.push({
+        date,
+        kind: "LANDING_PAGE",
+        key: d.landingPagePlusQueryString || "(not set)",
+        sessions: finite(m.sessions),
+        bounceRate: m.bounceRate !== undefined && Number.isFinite(m.bounceRate) ? Number((m.bounceRate * 100).toFixed(2)) : null,
+      });
+    }
+    records += await upsertBreakdowns(channel.id, rows);
+  } catch (e) {
+    if (e instanceof Error && e.name === "AuthError") throw e;
+    notes.push("landing pages unavailable");
+  }
+  return { records, notes };
 }

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { Platform } from "@/generated/prisma/client";
 import type { DateRange } from "@/lib/metrics/periods";
-import { addDaysUtc, localDayToUtc } from "@/lib/metrics/dates";
+import { localDayToUtc } from "@/lib/metrics/dates";
 import {
   aggregateChannelDays,
   aggregateWebsiteDays,
@@ -232,26 +232,55 @@ export async function getPostsForRange(range: DateRange, platform?: Platform): P
   });
 }
 
-/** Sort descending by a nullable value; rows with no value go last and never "win". */
-export function rankBy<T>(
-  rows: T[],
-  getValue: (row: T) => number | null,
-  direction: "desc" | "asc" = "desc"
-): T[] {
-  const withValue = rows.filter((r) => getValue(r) !== null);
-  const without = rows.filter((r) => getValue(r) === null);
-  withValue.sort((a, b) =>
-    direction === "desc"
-      ? (getValue(b) as number) - (getValue(a) as number)
-      : (getValue(a) as number) - (getValue(b) as number)
-  );
-  return [...withValue, ...without];
+export { rankBy, leaderBy } from "@/lib/metrics/rank";
+
+export type SeriesGrain = "day" | "week" | "month";
+export type SeriesPoint = {
+  label: string;
+  impressions: Metric;
+  engagement: Metric;
+  followers: Metric;
+};
+
+function bucketKey(day: Date, grain: SeriesGrain): string {
+  if (grain === "day") return day.toISOString().slice(0, 10);
+  if (grain === "month") return day.toISOString().slice(0, 7);
+  // ISO week: Monday of that week
+  const d = new Date(day);
+  const dow = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dow);
+  return d.toISOString().slice(0, 10);
 }
 
-/** The leader for a metric, or undefined when nobody has a value. */
-export function leaderBy<T>(rows: T[], getValue: (row: T) => number | null): T | undefined {
-  const top = rankBy(rows, getValue)[0];
-  return top && getValue(top) !== null ? top : undefined;
-}
+/** Daily rows summed across channels into day/week/month buckets (followers = last known per channel). */
+export async function getSeries(
+  platform: Platform | Platform[],
+  range: DateRange,
+  grain: SeriesGrain
+): Promise<SeriesPoint[]> {
+  const platforms = Array.isArray(platform) ? platform : [platform];
+  const { startDay, endDay } = rangeDays(range);
+  const rows = await prisma.channelDailyMetric.findMany({
+    where: { channel: { platform: { in: platforms }, isActive: true }, date: { gte: startDay, lte: endDay } },
+    orderBy: { date: "asc" },
+    select: { channelId: true, date: true, impressions: true, engagement: true, followers: true },
+  });
 
-export { addDaysUtc };
+  const buckets = new Map<string, { imp: Metric[]; eng: Metric[]; lastFollowers: Map<string, number> }>();
+  for (const r of rows) {
+    const k = bucketKey(r.date, grain);
+    const b = buckets.get(k) ?? { imp: [] as Metric[], eng: [] as Metric[], lastFollowers: new Map<string, number>() };
+    b.imp.push(r.impressions);
+    b.eng.push(r.engagement);
+    if (r.followers !== null) b.lastFollowers.set(r.channelId, r.followers);
+    buckets.set(k, b);
+  }
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([label, b]) => ({
+      label,
+      impressions: sumNullable(b.imp),
+      engagement: sumNullable(b.eng),
+      followers: b.lastFollowers.size ? sumNullable([...b.lastFollowers.values()]) : null,
+    }));
+}

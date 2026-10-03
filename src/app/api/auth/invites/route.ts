@@ -7,6 +7,8 @@ import { hashInviteToken } from "@/lib/auth/invites";
 import { requireAdmin } from "@/lib/auth/authorization";
 import { rateLimit } from "@/lib/security/rate-limit";
 import { sendInvitationEmail } from "@/lib/email/invitations";
+import { audit } from "@/lib/audit";
+import { getUsage, getWorkspace, planLimitResponse } from "@/lib/billing/workspace";
 
 const inviteSchema = z.object({
   email: z.email().max(254),
@@ -54,6 +56,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "The installation owner account is missing." }, { status: 503 });
   }
 
+  const [ws, usage] = await Promise.all([getWorkspace(), getUsage()]);
+  const maxSeats = ws.plan.limits.seats;
+  if (maxSeats !== null && usage.seats + usage.pendingInvites >= maxSeats) {
+    return planLimitResponse("seats", maxSeats, ws.plan.name);
+  }
+
   const token = randomBytes(32).toString("base64url");
   const now = new Date();
   await prisma.teamInvite.updateMany({
@@ -71,6 +79,7 @@ export async function POST(req: NextRequest) {
     select: { id: true, email: true, role: true, expiresAt: true },
   });
 
+  await audit("invite.created", { req, actor: access.session, target: invite.email, meta: { role: invite.role } });
   const baseUrl = process.env.APP_BASE_URL?.replace(/\/$/, "") || req.nextUrl.origin;
   const inviteUrl = `${baseUrl}/signup#invite=${token}`;
   const delivery = await sendInvitationEmail({
@@ -98,5 +107,6 @@ export async function DELETE(req: NextRequest) {
     where: { id, acceptedAt: null },
     data: { expiresAt: new Date() },
   });
+  await audit("invite.revoked", { req, actor: access.session, target: id });
   return NextResponse.json({ ok: true });
 }

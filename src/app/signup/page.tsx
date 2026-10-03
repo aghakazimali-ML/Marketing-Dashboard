@@ -34,6 +34,8 @@ function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [setupToken, setSetupToken] = useState("");
+  const [setupTokenConfigured, setSetupTokenConfigured] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -49,6 +51,7 @@ function SignupForm() {
         const setup = await response.json();
         if (cancelled) return;
         setSetupComplete(Boolean(setup.setupComplete));
+        setSetupTokenConfigured(setup.setupTokenConfigured !== false);
         setInviteToken(inviteFromUrl);
 
         if (setup.setupComplete && inviteFromUrl) {
@@ -97,7 +100,7 @@ function SignupForm() {
           name,
           email,
           password,
-          ...(invite ? { inviteToken } : {}),
+          ...(invite ? { inviteToken } : { setupToken }),
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -147,7 +150,19 @@ function SignupForm() {
                 ? `Accept your ${invite.role.toLowerCase()} invitation`
                 : "Create the owner account for this installation"}
             </p>
+            {!invite && !setupTokenConfigured ? (
+              <p role="alert" className="mt-4 rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
+                Owner setup is locked. Set <code>SETUP_TOKEN</code> in the server environment and restart, or run <code>npm run create-owner</code>.
+              </p>
+            ) : null}
             <form onSubmit={onSubmit} className="mt-6">
+              {!invite ? (
+                <div className="block text-sm">
+                  <label htmlFor="setup-token" className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">Setup token</label>
+                  <input id="setup-token" type="password" required value={setupToken} onChange={(event) => setSetupToken(event.target.value)} autoComplete="off" className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink" />
+                  <p className="mt-1 text-[11px] text-muted">The <code>SETUP_TOKEN</code> value from your server configuration.</p>
+                </div>
+              ) : null}
               <label className="block text-sm">
                 <span className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">
                   Name
@@ -158,7 +173,7 @@ function SignupForm() {
                   maxLength={80}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-teal-500"
                   autoComplete="name"
                 />
               </label>
@@ -174,7 +189,7 @@ function SignupForm() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   readOnly={Boolean(invite)}
-                  className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-teal-500"
                   autoComplete="email"
                 />
               </label>
@@ -190,7 +205,7 @@ function SignupForm() {
                   maxLength={128}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-teal-500"
                   autoComplete="new-password"
                 />
               </label>
@@ -206,7 +221,7 @@ function SignupForm() {
                   maxLength={128}
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-teal-500"
                   autoComplete="new-password"
                 />
               </label>
@@ -216,7 +231,7 @@ function SignupForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-6 w-full rounded-md bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+                className="mt-6 w-full rounded-md bg-teal-600 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50"
               >
                 {loading ? "Creating account…" : "Create account"}
               </button>

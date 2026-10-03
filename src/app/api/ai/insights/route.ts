@@ -6,7 +6,8 @@ import { requireUser } from "@/lib/auth/authorization";
 import { decryptSecret } from "@/lib/crypto/secrets";
 import { generateProviderResponse } from "@/lib/ai/providers";
 import { rateLimit } from "@/lib/security/rate-limit";
-import { parseRangeParams } from "@/lib/metrics/params";
+import { resolveRequestRange } from "@/lib/metrics/request";
+import { gateFeature } from "@/lib/billing/workspace";
 import {
   getChannelMetricsForRange,
   getWebsiteMetrics,
@@ -33,6 +34,18 @@ export async function POST(req: NextRequest) {
   const access = await requireUser(req);
   if (!access.ok) return access.response;
 
+  const gate = await gateFeature("aiInsights");
+  if (!gate.ok) return gate.response;
+  const perDay = gate.workspace.plan.limits.aiInsightsPerDay;
+  if (perDay !== null) {
+    const day = rateLimit(`ai-daily:${new Date().toISOString().slice(0, 10)}`, perDay, 24 * 60 * 60 * 1000);
+    if (!day.ok) {
+      return NextResponse.json(
+        { error: `Your plan includes ${perDay} AI insight generations per day. Upgrade for more.`, code: "plan_limit" },
+        { status: 402 }
+      );
+    }
+  }
   const limit = rateLimit(`ai-insights:${access.session.email}`, 10, 60 * 60 * 1000);
   if (!limit.ok) {
     return NextResponse.json(
@@ -50,13 +63,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const range = parseRangeParams(Object.fromEntries(req.nextUrl.searchParams));
+  const { range } = await resolveRequestRange(Object.fromEntries(req.nextUrl.searchParams));
   const [social, website] = await Promise.all([
     getChannelMetricsForRange(SOCIAL_PLATFORMS, range),
     getWebsiteMetrics(range),
   ]);
   const channels = social
-    .sort((left, right) => right.impressions - left.impressions)
+    // Channels with no reported value sort last; nulls are passed on as null ("not provided").
+    .sort((left, right) => (right.impressions ?? -1) - (left.impressions ?? -1))
     .slice(0, 40)
     .map((channel) => ({
       platform: channel.platform,

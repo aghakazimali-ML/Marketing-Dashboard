@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
+/*
+  Design tokens. Components use these (via the Tailwind theme below) instead of raw hex values.
+  Dark mode: follows the OS unless the user picks a theme (html[data-theme="light|dark"]).
+*/
 :root {
+  color-scheme: light;
   --navy-950: #06101f;
   --navy-900: #0b1f3a;
   --navy-800: #122a4a;
@@ -18,10 +23,143 @@
   --line: #c5ddd2;
   --up: #047857;
   --down: #b91c1c;
+  --warn: #92400e;
   --card: rgba(255, 255, 255, 0.88);
+  --surface: #ffffff;
+  --on-accent: #ffffff;
   --sidebar: #061820;
   --background: #e8f5ef;
   --foreground: var(--ink);
+  --focus: #0f766e;
+
+  /* chart + platform palette (validated for contrast on --surface) */
+  --chart-1: #0b1f3a;
+  --chart-2: #0d9488;
+  --chart-3: #b45309;
+  --chart-4: #7c3aed;
+  --chart-grid: #dbe7e1;
+  --chart-axis: #4a6478;
+  --platform-linkedin: #0a66c2;
+  --platform-facebook: #1d4ed8;
+  --platform-instagram: #be185d;
+  --platform-youtube: #b91c1c;
+  --platform-website: #0f766e;
+
+  /* stage / glass */
+  --stage-base: #eaf7f0;
+  --stage-glow-1: rgba(163, 209, 51, 0.42);
+  --stage-glow-2: rgba(0, 229, 192, 0.32);
+  --stage-glow-3: rgba(255, 176, 32, 0.28);
+  --stage-glow-4: rgba(56, 189, 248, 0.28);
+  --stage-glow-5: rgba(30, 126, 52, 0.12);
+  --stage-wash: linear-gradient(155deg, #d8f6e6 0%, #eaf8ff 40%, #fff6e8 72%, #e9ffe8 100%);
+  --stage-dots: rgba(14, 90, 70, 0.07);
+  --header-bg: linear-gradient(120deg, rgba(255, 255, 255, 0.86) 0%, rgba(230, 255, 240, 0.82) 50%, rgba(232, 248, 255, 0.84) 100%);
+  --header-line: rgba(30, 126, 52, 0.12);
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-line: rgba(255, 255, 255, 0.75);
+  --card-shadow: 0 10px 32px rgba(6, 40, 30, 0.07);
+  --thead-bg: linear-gradient(90deg, rgba(212, 245, 228, 0.8), rgba(255, 255, 255, 0.5), rgba(224, 247, 255, 0.8));
+  --leader-from: #04141c;
+  --leader-via: #0a3d2e;
+  --leader-to: #122a4a;
+  --leader-text: #00e5c0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --navy-900: #e6f0fb;
+    --navy-800: #cfe0f3;
+    --navy-700: #a9c4e0;
+    --teal-600: #14b8a6;
+    --teal-500: #2dd4bf;
+    --ink: #e8f1ee;
+    --muted: #9db4bf;
+    --line: #28423d;
+    --sand-50: #10241f;
+    --sand-100: #173029;
+    --up: #34d399;
+    --down: #f87171;
+    --warn: #fbbf24;
+    --card: rgba(18, 36, 32, 0.88);
+    --surface: #0f1f1c;
+    --on-accent: #04141c;
+    --background: #07140f;
+    --focus: #5eead4;
+    --chart-1: #93c5fd;
+    --chart-2: #2dd4bf;
+    --chart-3: #fbbf24;
+    --chart-4: #c4b5fd;
+    --chart-grid: #1e3630;
+    --chart-axis: #9db4bf;
+    --platform-linkedin: #60a5fa;
+    --platform-facebook: #93c5fd;
+    --platform-instagram: #f472b6;
+    --platform-youtube: #f87171;
+    --platform-website: #2dd4bf;
+    --stage-base: #07140f;
+    --stage-glow-1: rgba(163, 209, 51, 0.12);
+    --stage-glow-2: rgba(0, 229, 192, 0.1);
+    --stage-glow-3: rgba(255, 176, 32, 0.06);
+    --stage-glow-4: rgba(56, 189, 248, 0.08);
+    --stage-glow-5: rgba(30, 126, 52, 0.1);
+    --stage-wash: linear-gradient(155deg, #07140f 0%, #0a1b1f 45%, #10150d 100%);
+    --stage-dots: rgba(163, 209, 51, 0.05);
+    --header-bg: linear-gradient(120deg, rgba(10, 24, 20, 0.9), rgba(10, 28, 26, 0.88));
+    --header-line: rgba(163, 209, 51, 0.14);
+    --card-bg: rgba(16, 33, 29, 0.92);
+    --card-line: rgba(255, 255, 255, 0.07);
+    --card-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+    --thead-bg: linear-gradient(90deg, rgba(23, 48, 41, 0.9), rgba(16, 33, 29, 0.6));
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --navy-900: #e6f0fb;
+  --navy-800: #cfe0f3;
+  --navy-700: #a9c4e0;
+  --teal-600: #14b8a6;
+  --teal-500: #2dd4bf;
+  --ink: #e8f1ee;
+  --muted: #9db4bf;
+  --line: #28423d;
+  --sand-50: #10241f;
+  --sand-100: #173029;
+  --up: #34d399;
+  --down: #f87171;
+  --warn: #fbbf24;
+  --card: rgba(18, 36, 32, 0.88);
+  --surface: #0f1f1c;
+  --on-accent: #04141c;
+  --background: #07140f;
+  --focus: #5eead4;
+  --chart-1: #93c5fd;
+  --chart-2: #2dd4bf;
+  --chart-3: #fbbf24;
+  --chart-4: #c4b5fd;
+  --chart-grid: #1e3630;
+  --chart-axis: #9db4bf;
+  --platform-linkedin: #60a5fa;
+  --platform-facebook: #93c5fd;
+  --platform-instagram: #f472b6;
+  --platform-youtube: #f87171;
+  --platform-website: #2dd4bf;
+  --stage-base: #07140f;
+  --stage-glow-1: rgba(163, 209, 51, 0.12);
+  --stage-glow-2: rgba(0, 229, 192, 0.1);
+  --stage-glow-3: rgba(255, 176, 32, 0.06);
+  --stage-glow-4: rgba(56, 189, 248, 0.08);
+  --stage-glow-5: rgba(30, 126, 52, 0.1);
+  --stage-wash: linear-gradient(155deg, #07140f 0%, #0a1b1f 45%, #10150d 100%);
+  --stage-dots: rgba(163, 209, 51, 0.05);
+  --header-bg: linear-gradient(120deg, rgba(10, 24, 20, 0.9), rgba(10, 28, 26, 0.88));
+  --header-line: rgba(163, 209, 51, 0.14);
+  --card-bg: rgba(16, 33, 29, 0.92);
+  --card-line: rgba(255, 255, 255, 0.07);
+  --card-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+  --thead-bg: linear-gradient(90deg, rgba(23, 48, 41, 0.9), rgba(16, 33, 29, 0.6));
 }
 
 @theme inline {
@@ -34,6 +172,8 @@
   --color-teal-600: var(--teal-600);
   --color-teal-500: var(--teal-500);
   --color-teal-400: var(--teal-400);
+  --color-lime: var(--lime);
+  --color-electric: var(--electric);
   --color-sand-50: var(--sand-50);
   --color-sand-100: var(--sand-100);
   --color-ink: var(--ink);
@@ -41,8 +181,17 @@
   --color-line: var(--line);
   --color-up: var(--up);
   --color-down: var(--down);
+  --color-warn: var(--warn);
   --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-on-accent: var(--on-accent);
   --color-sidebar: var(--sidebar);
+  --color-focus: var(--focus);
+  --color-platform-linkedin: var(--platform-linkedin);
+  --color-platform-facebook: var(--platform-facebook);
+  --color-platform-instagram: var(--platform-instagram);
+  --color-platform-youtube: var(--platform-youtube);
+  --color-platform-website: var(--platform-website);
   --font-sans: var(--font-dm-sans);
   --font-display: var(--font-fraunces);
 }
@@ -65,15 +214,34 @@ h3,
   font-family: var(--font-fraunces), Georgia, serif;
 }
 
-/*
-  Fixed full-viewport stage — scrolls cleanly (no background-attachment: fixed,
-  no giant moving blur layers that smear while scrolling).
-*/
+/* Visible keyboard focus everywhere (WCAG 2.4.7). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 100;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 2px solid var(--focus);
+}
+.skip-link:focus {
+  top: 8px;
+}
+
+/* Fixed full-viewport stage: scrolls cleanly (no background-attachment: fixed). */
 .app-stage {
   position: relative;
   isolation: isolate;
   min-height: 100vh;
-  background: #eaf7f0;
+  background: var(--stage-base);
 }
 
 .app-stage::before {
@@ -83,12 +251,12 @@ h3,
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(ellipse 90% 70% at 8% 12%, rgba(163, 209, 51, 0.42), transparent 58%),
-    radial-gradient(ellipse 80% 60% at 92% 8%, rgba(0, 229, 192, 0.32), transparent 52%),
-    radial-gradient(ellipse 70% 55% at 88% 88%, rgba(255, 176, 32, 0.28), transparent 55%),
-    radial-gradient(ellipse 65% 50% at 6% 85%, rgba(56, 189, 248, 0.28), transparent 52%),
-    radial-gradient(ellipse 55% 45% at 48% 48%, rgba(30, 126, 52, 0.12), transparent 62%),
-    linear-gradient(155deg, #d8f6e6 0%, #eaf8ff 40%, #fff6e8 72%, #e9ffe8 100%);
+    radial-gradient(ellipse 90% 70% at 8% 12%, var(--stage-glow-1), transparent 58%),
+    radial-gradient(ellipse 80% 60% at 92% 8%, var(--stage-glow-2), transparent 52%),
+    radial-gradient(ellipse 70% 55% at 88% 88%, var(--stage-glow-3), transparent 55%),
+    radial-gradient(ellipse 65% 50% at 6% 85%, var(--stage-glow-4), transparent 52%),
+    radial-gradient(ellipse 55% 45% at 48% 48%, var(--stage-glow-5), transparent 62%),
+    var(--stage-wash);
 }
 
 .app-stage::after {
@@ -98,10 +266,7 @@ h3,
   inset: 0;
   z-index: 0;
   opacity: 0.35;
-  background-image: radial-gradient(
-    rgba(14, 90, 70, 0.07) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(var(--stage-dots) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 
@@ -111,33 +276,45 @@ h3,
 }
 
 .glass-header {
-  background: linear-gradient(
-    120deg,
-    rgba(255, 255, 255, 0.86) 0%,
-    rgba(230, 255, 240, 0.82) 50%,
-    rgba(232, 248, 255, 0.84) 100%
-  );
-  border-bottom: 1px solid rgba(30, 126, 52, 0.12);
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-line);
   box-shadow: 0 8px 28px rgba(6, 24, 32, 0.05);
 }
 
 .crazy-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--card-bg);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.85) inset,
-    0 10px 32px rgba(6, 40, 30, 0.07);
+  border: 1px solid var(--card-line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, var(--card-shadow);
+}
+
+.table-head {
+  background: var(--thead-bg);
+}
+
+.leader-card {
+  background: linear-gradient(135deg, var(--leader-from), var(--leader-via), var(--leader-to));
+  color: #ffffff;
 }
 
 .sidebar-glow {
-  box-shadow:
-    4px 0 36px rgba(163, 209, 51, 0.22),
-    inset -1px 0 0 rgba(163, 209, 51, 0.3);
+  box-shadow: 4px 0 36px rgba(163, 209, 51, 0.22), inset -1px 0 0 rgba(163, 209, 51, 0.3);
   background:
     radial-gradient(ellipse 120% 40% at 0% 0%, rgba(163, 209, 51, 0.32), transparent 55%),
     radial-gradient(ellipse 100% 50% at 100% 100%, rgba(0, 229, 192, 0.18), transparent 50%),
     linear-gradient(180deg, #04141c 0%, #0a2a22 50%, #061820 100%);
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--sand-100) 25%, var(--sand-50) 50%, var(--sand-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 ::-webkit-scrollbar {
@@ -147,4 +324,26 @@ h3,
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #1e7e34, #00e5c0);
   border-radius: 999px;
+}
+
+/* Respect user preferences for motion and transparency. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .crazy-card,
+  .glass-header {
+    backdrop-filter: none;
+    background: var(--surface);
+  }
+}
+@media (forced-colors: active) {
+  .crazy-card { border: 1px solid CanvasText; }
 }

@@ -4,6 +4,7 @@ import { AiProvider } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { requireAdmin, requireUser } from "@/lib/auth/authorization";
 import { decryptSecret, encryptSecret } from "@/lib/crypto/secrets";
+import { audit } from "@/lib/audit";
 
 const settingsSchema = z.object({
   provider: z.enum(["OPENAI", "ANTHROPIC", "XAI", "GOOGLE"]),
@@ -65,6 +66,11 @@ export async function PUT(req: NextRequest) {
     select: { provider: true, model: true, apiKey: true, updatedAt: true },
   });
 
+  await audit("ai.settings_changed", {
+    req,
+    actor: access.session,
+    meta: { provider: settings.provider, model: settings.model, keyChanged: Boolean(parsed.data.apiKey || parsed.data.clearApiKey) },
+  });
   return NextResponse.json({
     configured: Boolean(settings.apiKey && decryptSecret(settings.apiKey)),
     provider: settings.provider,

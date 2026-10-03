@@ -49,7 +49,7 @@ export const PLATFORM_METRICS: Record<Exclude<Platform, "WEBSITE">, { api: strin
     api: `Instagram Graph API ${API_VERSIONS.META} (Account Insights)`,
     provides: {
       followers: "followers_count",
-      newFollowers: "follows_and_unfollows (net)",
+      newFollowers: "follower_count (daily new followers)",
       impressions: "views",
       reach: "reach",
       engagement: "likes + comments + shares + saves",

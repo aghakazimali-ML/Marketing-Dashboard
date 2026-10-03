@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/authorization";
+import { audit } from "@/lib/audit";
+import { getUsage, getWorkspace, planLimitResponse } from "@/lib/billing/workspace";
 
 const updateSchema = z.object({
   id: z.string().min(1).max(64),
@@ -59,12 +61,23 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
+  if (data.isActive === true) {
+    const [ws, usage, current] = await Promise.all([getWorkspace(), getUsage(), prisma.teamMember.findUnique({ where: { id }, select: { isActive: true } })]);
+    const maxSeats = ws.plan.limits.seats;
+    if (current && !current.isActive && maxSeats !== null && usage.seats >= maxSeats) {
+      return planLimitResponse("seats", maxSeats, ws.plan.name);
+    }
+  }
+
   try {
+    // Role/activation changes revoke that member's existing sessions immediately.
     const member = await prisma.teamMember.update({
       where: { id },
-      data,
+      data: { ...data, sessionVersion: { increment: 1 } },
       select: { id: true, name: true, email: true, role: true, isActive: true },
     });
+    if (data.role !== undefined) await audit("member.role_changed", { req, actor: access.session, target: member.email, meta: { role: data.role } });
+    if (data.isActive !== undefined) await audit(data.isActive ? "member.enabled" : "member.disabled", { req, actor: access.session, target: member.email });
     return NextResponse.json({ member });
   } catch {
     return NextResponse.json({ error: "Team member not found" }, { status: 404 });

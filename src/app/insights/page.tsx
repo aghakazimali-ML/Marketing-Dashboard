@@ -6,6 +6,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useDateRange } from "@/components/providers/date-range-provider";
 import { SectionCard } from "@/components/ui/section-card";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import { useEntitlements } from "@/components/providers/entitlements-provider";
 
 type AiProvider = "OPENAI" | "ANTHROPIC" | "XAI" | "GOOGLE";
 type AiSettings = { configured: boolean; provider: AiProvider; model: string };
@@ -35,9 +37,14 @@ export default function InsightsPage() {
       title="AI Insights"
       subtitle="Recommendations grounded in your selected-period channel metrics"
     >
-      <InsightsContent />
+      <InsightsGate />
     </AppShell>
   );
+}
+
+function InsightsGate() {
+  const { has } = useEntitlements();
+  return has("aiInsights") ? <InsightsContent /> : <UpgradePrompt feature="aiInsights" />;
 }
 
 function InsightsContent() {
@@ -139,7 +146,7 @@ function InsightsContent() {
                   setModel(AI_PROVIDERS.find((item) => item.value === nextProvider)?.defaultModel ?? "");
                   setSettings(null);
                 }}
-                className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+                className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
               >
                 {AI_PROVIDERS.map((item) => (
                   <option key={item.value} value={item.value}>{item.label}</option>
@@ -153,7 +160,7 @@ function InsightsContent() {
                 maxLength={100}
                 value={model}
                 onChange={(event) => setModel(event.target.value)}
-                className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+                className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
                 placeholder={AI_PROVIDERS.find((item) => item.value === provider)?.defaultModel}
               />
             </label>
@@ -164,7 +171,7 @@ function InsightsContent() {
                 maxLength={500}
                 value={apiKey}
                 onChange={(event) => setApiKey(event.target.value)}
-                className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+                className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
                 placeholder={settings?.configured ? "Saved key; leave blank to keep" : "Paste API key"}
                 autoComplete="new-password"
               />
@@ -172,7 +179,7 @@ function InsightsContent() {
             <button
               type="submit"
               disabled={saving || settingsLoading}
-              className="rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+              className="rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save settings"}
             </button>
@@ -204,7 +211,7 @@ function InsightsContent() {
           type="button"
           onClick={() => void generateInsights()}
           disabled={generating || settingsLoading || !settings?.configured}
-          className="mt-4 rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {generating ? "Analyzing selected metrics…" : "Generate insights"}
         </button>

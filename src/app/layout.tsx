@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 import { DASHBOARD_NAME } from "@/lib/brand";
+import { Providers } from "@/components/providers/providers";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -12,6 +13,9 @@ const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
 });
+
+// Per-request CSP nonces require dynamic rendering (static HTML cannot carry a fresh nonce).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: DASHBOARD_NAME,
@@ -33,7 +37,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full" suppressHydrationWarning>
-        {children}
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

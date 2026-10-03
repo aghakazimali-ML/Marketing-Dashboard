@@ -45,6 +45,8 @@ model DashboardOwner {
   name         String
   email        String   @unique
   passwordHash String
+  /// Bumped on password change / revocation; embedded in the session JWT.
+  sessionVersion Int    @default(0)
   createdAt    DateTime @default(now())
 }
 
@@ -55,6 +57,7 @@ model TeamMember {
   passwordHash String
   role         TeamRole @default(ANALYST)
   isActive     Boolean  @default(true)
+  sessionVersion Int    @default(0)
   createdAt    DateTime @default(now())
 
   @@index([role, isActive])
@@ -105,6 +108,8 @@ model Channel {
   lastSuccessAt    DateTime?
   /// Short, client-safe summary of the last failure.
   lastError        String?
+  /// When the "token expires soon" email was last sent for this token.
+  expiryWarnedAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -297,6 +302,94 @@ model SyncRun {
   startedAt  DateTime   @default(now())
   finishedAt DateTime?
   message    String?
+  /// Short, client-safe summary.
   error      String?
+  /// Full upstream detail (admins only). Never contains tokens.
+  detail     String?
   recordsUpserted Int   @default(0)
+  trigger    String     @default("manual")
+
+  @@index([startedAt])
+}
+
+/// Single-row mutex so two fetches never run at once.
+model SyncLock {
+  id          String   @id
+  lockedUntil DateTime
+  owner       String
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  actorEmail String?
+  actorRole  String?
+  action     String
+  target     String?
+  success    Boolean  @default(true)
+  ip         String?
+  meta       String?
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+model PasswordResetToken {
+  id          String    @id @default(cuid())
+  subjectType String    // OWNER | MEMBER
+  subjectId   String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([subjectType, subjectId])
+  @@index([expiresAt])
+}
+
+/// Singleton describing this installation's subscription / licence.
+model Workspace {
+  id                   Int       @id @default(1)
+  plan                 Plan      @default(FREE)
+  planStatus           String    @default("active") // active | trialing | past_due | canceled
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  billingInterval      String?   // month | year
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  /// White-label product name (Exclusive plan).
+  brandName            String?
+  /// Scheduled email digest: NONE | WEEKLY | MONTHLY (Pro+).
+  reportFrequency      String    @default("NONE")
+  /// Comma separated extra recipients; admins always receive it.
+  reportRecipients     String?
+  lastReportAt         DateTime?
+  updatedAt            DateTime  @updatedAt
+}
+
+/// Read-only REST API keys (Exclusive plan). Only a hash of the key is stored.
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  /// First characters of the key, shown in the UI to identify it.
+  prefix     String
+  keyHash    String    @unique
+  createdBy  String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+}
+
+/// Processed Stripe webhook events (idempotency).
+model StripeEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  EXCLUSIVE
 }

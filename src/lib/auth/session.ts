@@ -3,14 +3,21 @@ import { SignJWT, jwtVerify } from "jose";
 import type { NextResponse } from "next/server";
 
 export const SESSION_COOKIE = "dashboard_session";
-const SESSION_TTL = "12h";
-const TEAM_SESSION_TTL = "1h";
+/** Short-lived access token; active users are silently refreshed up to the absolute limit. */
+const ACCESS_TTL_SEC = 60 * 60;
+const ABSOLUTE_TTL_SEC = 12 * 60 * 60;
+export const REFRESH_AFTER_SEC = 15 * 60;
 
 export type SessionRole = "ADMIN" | "ANALYST";
 export type DashboardSession = {
   email: string;
   role: SessionRole;
   teamMemberId?: string;
+  /** Matches owner/member.sessionVersion; a bump revokes all older sessions. */
+  sessionVersion: number;
+  /** Original sign-in time (seconds) so refreshes cannot extend a session forever. */
+  signedInAt: number;
+  issuedAt: number;
 };
 
 function getSecretKey() {
@@ -31,27 +38,37 @@ export function isAuthConfigured() {
 export async function createSessionToken(
   email: string,
   role: SessionRole = "ADMIN",
-  teamMemberId?: string
+  teamMemberId?: string,
+  opts: { sessionVersion?: number; signedInAt?: number } = {}
 ) {
+  const now = Math.floor(Date.now() / 1000);
   return new SignJWT({
     sub: email,
     role,
+    sv: opts.sessionVersion ?? 0,
+    sia: opts.signedInAt ?? now,
     ...(teamMemberId ? { teamMemberId } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(teamMemberId ? TEAM_SESSION_TTL : SESSION_TTL)
+    .setIssuedAt(now)
+    .setExpirationTime(now + ACCESS_TTL_SEC)
     .sign(getSecretKey());
 }
 
-export async function verifySessionToken(token: string) {
+export async function verifySessionToken(token: string): Promise<DashboardSession | null> {
   try {
-    const { payload } = await jwtVerify(token, getSecretKey());
-    const rawRole = String(payload.role ?? "ADMIN").toUpperCase();
+    const { payload } = await jwtVerify(token, getSecretKey(), { algorithms: ["HS256"] });
+    const rawRole = String(payload.role ?? "").toUpperCase();
     if (rawRole !== "ADMIN" && rawRole !== "ANALYST") return null;
+    const issuedAt = typeof payload.iat === "number" ? payload.iat : 0;
+    const signedInAt = typeof payload.sia === "number" ? payload.sia : issuedAt;
+    if (Date.now() / 1000 - signedInAt > ABSOLUTE_TTL_SEC) return null;
     return {
       email: String(payload.sub ?? ""),
       role: rawRole as SessionRole,
+      sessionVersion: typeof payload.sv === "number" ? payload.sv : 0,
+      signedInAt,
+      issuedAt,
       ...(typeof payload.teamMemberId === "string"
         ? { teamMemberId: payload.teamMemberId }
         : {}),
@@ -96,6 +113,6 @@ export function setSessionCookie(response: NextResponse, token: string) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 12,
+    maxAge: ABSOLUTE_TTL_SEC,
   });
 }

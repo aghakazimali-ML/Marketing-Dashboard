@@ -3,6 +3,9 @@ import { z } from "zod";
 import { TeamRole } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { hashPassword, createSessionToken, isAuthConfigured, setSessionCookie } from "@/lib/auth/session";
+import { safeEqual } from "@/lib/auth/accounts";
+import { audit } from "@/lib/audit";
+import { clientIp as getClientIp } from "@/lib/security/client-ip";
 import { hashInviteToken } from "@/lib/auth/invites";
 import { rateLimit } from "@/lib/security/rate-limit";
 
@@ -11,6 +14,7 @@ const signupSchema = z.object({
   email: z.email().max(254),
   password: z.string().min(12).max(128),
   inviteToken: z.string().min(32).max(128).optional(),
+  setupToken: z.string().max(256).optional(),
 });
 
 class InviteUnavailableError extends Error {}
@@ -24,7 +28,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const clientIp = getClientIp(req);
     const limit = rateLimit(`signup:${clientIp}`, 5, 60 * 60 * 1000);
     if (!limit.ok) {
       return NextResponse.json(
@@ -56,6 +60,18 @@ export async function POST(req: NextRequest) {
     const passwordHash = await hashPassword(body.data.password);
 
     if (!existingOwner) {
+      // SEC-3: the first owner can only be created by someone who knows SETUP_TOKEN.
+      const expected = process.env.SETUP_TOKEN?.trim();
+      if (!expected) {
+        return NextResponse.json(
+          { error: "Owner setup is locked. Set SETUP_TOKEN in the server environment (or run `npm run create-owner`)." },
+          { status: 503 }
+        );
+      }
+      if (!body.data.setupToken || !safeEqual(body.data.setupToken.trim(), expected)) {
+        await audit("owner.created", { req, target: email, success: false, meta: { reason: "bad setup token" } });
+        return NextResponse.json({ error: "The setup token is incorrect." }, { status: 403 });
+      }
       const owner = await prisma.dashboardOwner.create({
         data: { name: body.data.name, email, passwordHash },
         select: { email: true },
@@ -63,6 +79,7 @@ export async function POST(req: NextRequest) {
       const token = await createSessionToken(owner.email, "ADMIN");
       const response = NextResponse.json({ ok: true, email: owner.email, role: "ADMIN" });
       setSessionCookie(response, token);
+      await audit("owner.created", { req, actor: { email: owner.email, role: "ADMIN" } });
       return response;
     }
 
@@ -113,7 +130,10 @@ export async function POST(req: NextRequest) {
       return createdMember;
     });
 
-    const sessionToken = await createSessionToken(member.email, member.role, member.id);
+    await audit("invite.accepted", { req, actor: { email: member.email, role: member.role } });
+    const sessionToken = await createSessionToken(member.email, member.role, member.id, {
+      sessionVersion: member.sessionVersion,
+    });
     const response = NextResponse.json({ ok: true, email: member.email, role: member.role });
     setSessionCookie(response, sessionToken);
     return response;

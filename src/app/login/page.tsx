@@ -1,17 +1,17 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useEffect } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
-import { BarChart3 } from "lucide-react";
-import { DASHBOARD_NAME } from "@/lib/brand";
+import { AuthCard, TextField, primaryButton } from "@/components/ui/auth-card";
+import { safeNextPath } from "@/lib/auth/paths";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/";
+  // SEC-5: only same-site relative paths are honoured.
+  const next = safeNextPath(params.get("next"));
+  const reason = params.get("reason");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
@@ -36,10 +36,8 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(json.error || "Login failed");
-      }
-      router.replace(next.startsWith("/") ? next : "/");
+      if (!res.ok) throw new Error(json.error || "Login failed");
+      router.replace(next);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -49,80 +47,36 @@ function LoginForm() {
   }
 
   return (
-    <div className="app-stage flex min-h-screen items-center justify-center px-4">
-      <form
-        onSubmit={onSubmit}
-        className="crazy-card w-full max-w-md rounded-2xl p-8"
-      >
-        <div className="mb-5 flex justify-center text-teal-600">
-          <BarChart3 size={36} strokeWidth={1.6} aria-hidden="true" />
-        </div>
-        <h1 className="font-display text-center text-2xl text-navy-900">
-          {DASHBOARD_NAME}
-        </h1>
-        <p className="mt-1 text-center text-sm text-muted">
-          Sign in to access your workspace
-        </p>
-
-        <label className="mt-6 block text-sm">
-          <span className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">
-            Email
-          </span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
-            autoComplete="username"
-          />
-        </label>
-
-        <label className="mt-3 block text-sm">
-          <span className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">
-            Password
-          </span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
-            autoComplete="current-password"
-          />
-        </label>
-
-        {error ? <p className="mt-3 text-sm text-down">{error}</p> : null}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-6 w-full rounded-md bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
-        >
+    <AuthCard subtitle="Sign in to access your workspace">
+      {reason === "expired" ? (
+        <p role="status" className="mt-4 rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">Your session expired. Please sign in again.</p>
+      ) : null}
+      {reason === "signed_out" ? <p role="status" className="mt-4 rounded-md border border-line bg-sand-50 px-3 py-2 text-sm text-muted">You have been signed out.</p> : null}
+      {reason === "password_reset" ? <p role="status" className="mt-4 rounded-md border border-up/40 bg-up/10 px-3 py-2 text-sm text-up">Password updated. Sign in with your new password.</p> : null}
+      <form onSubmit={onSubmit} className="mt-2">
+        <TextField label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
+        <TextField label="Password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+        {error ? <p role="alert" className="mt-3 text-sm text-down">{error}</p> : null}
+        <button type="submit" disabled={loading} className={primaryButton}>
           {loading ? "Signing in…" : "Sign in"}
         </button>
-        {setupComplete === false ? (
-          <p className="mt-5 text-center text-sm text-muted">
-            First time here?{" "}
-            <Link href="/signup" className="font-semibold text-teal-700 hover:text-teal-600">
-              Create your account
-            </Link>
-          </p>
-        ) : null}
       </form>
-    </div>
+      <p className="mt-4 text-center text-sm">
+        <Link href="/forgot-password" className="font-medium text-teal-700 hover:underline">Forgot your password?</Link>
+      </p>
+      {setupComplete === false ? (
+        <p className="mt-3 text-center text-sm text-muted">
+          First time here?{" "}
+          <Link href="/signup" className="font-semibold text-teal-700 hover:text-teal-600">Create the owner account</Link>
+        </p>
+      ) : null}
+    </AuthCard>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center text-sm text-muted">
-          Loading…
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-sm text-muted">Loading…</div>}>
       <LoginForm />
     </Suspense>
   );
