@@ -70,7 +70,7 @@ export function Sidebar() {
         </p>
         <p className="mt-0.5 text-xs text-white/60 max-lg:hidden">Marketing performance</p>
       </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4 max-lg:flex max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:overflow-y-hidden max-lg:space-y-0 max-lg:py-2">
+      <nav className="relative flex-1 space-y-0.5 overflow-y-auto px-3 py-4 max-lg:flex max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:overflow-y-hidden max-lg:space-y-0 max-lg:py-2">
         {NAV.filter((item) => !item.adminOnly || user?.role === "ADMIN").map((item) => {
           const isActive =
             item.href === "/"
