@@ -11,7 +11,7 @@ FROM deps AS build
 COPY . .
 RUN npx prisma generate
 # Placeholder values only satisfy build-time checks; real secrets are supplied at runtime.
-ENV NEXT_TELEMETRY_DISABLED=1 AUTH_SECRET=build-time-placeholder-not-used-at-runtime
+ENV NEXT_TELEMETRY_DISABLED=1 AUTH_SECRET=build-time-placeholder-not-used-at-runtime DATABASE_URL=postgresql://build:build@localhost:5432/build
 RUN npm run build
 RUN npm prune --omit=dev
 

@@ -34,4 +34,5 @@ jobs:
       - run: npm run build
         env:
           AUTH_SECRET: ci-only-auth-secret-0123456789abcdef
+          DATABASE_URL: postgresql://dash:dash@localhost:5432/dashboard_test
       - run: npm audit --omit=dev --audit-level=high
