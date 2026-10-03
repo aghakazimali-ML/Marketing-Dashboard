@@ -1,0 +1,43 @@
+services:
+  dashboard:
+    build: .
+    image: marketing-dashboard:latest
+    restart: unless-stopped
+    env_file: .env            # copy .env.example to .env and fill it in
+    environment:
+      DATABASE_URL: file:/data/dashboard.db
+      TRUST_PROXY: "true"     # the app sits behind your reverse proxy (TLS terminates there)
+    ports:
+      - "127.0.0.1:3000:3000" # expose only to the reverse proxy on this host
+    volumes:
+      - dashboard-data:/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+
+  # Optional: daily fetch + email digest without system cron. Remove if you use host cron.
+  scheduler:
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      dashboard:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          sleep 86400
+          curl -fsS -X POST -H "x-cron-secret: $$CRON_SECRET" http://dashboard:3000/api/cron/sync || true
+          curl -fsS -X POST -H "x-cron-secret: $$CRON_SECRET" http://dashboard:3000/api/cron/reports || true
+        done
+
+volumes:
+  dashboard-data:

@@ -15,7 +15,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "rotate-secrets": "tsx scripts/rotate_secrets.ts",
-    "create-owner": "tsx scripts/create_owner.ts"
+    "create-owner": "tsx scripts/create_owner.ts",
+    "backup": "tsx scripts/backup.ts",
+    "restore": "tsx scripts/restore_backup.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.9.1",
@@ -30,10 +32,12 @@
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.28.0",
     "next": "^16.3.8",
+    "prisma": "^7.10.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.10.1",
     "stripe": "^23.0.0",
+    "tsx": "^4.23.15",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -44,9 +48,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^16.3.8",
-    "prisma": "^7.9.1",
     "tailwindcss": "^4",
-    "tsx": "^4.23.5",
     "typescript": "^5",
     "vitest": "^5.0.3"
   },

@@ -40,7 +40,7 @@ export function AppShell({
             {hideRange ? null : <DateRangePicker />}
           </div>
         </header>
-        <main id="main" tabIndex={-1} className="flex-1 px-6 py-6 max-lg:px-4">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-6 py-6 max-lg:px-4">
           {children}
         </main>
       </div>

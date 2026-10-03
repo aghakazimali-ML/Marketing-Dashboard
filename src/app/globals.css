@@ -347,3 +347,9 @@ h3,
 @media (forced-colors: active) {
   .crazy-card { border: 1px solid CanvasText; }
 }
+
+/* Scroll containers must contain absolutely positioned children (sr-only text) or the page scrolls sideways. */
+.overflow-x-auto,
+.overflow-auto {
+  position: relative;
+}

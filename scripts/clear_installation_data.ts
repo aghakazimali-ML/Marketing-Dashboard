@@ -11,6 +11,9 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("Clearing analytics, connected channels, team accounts, invites, and saved AI settings.");
+  await prisma.channelDailyMetric.deleteMany();
+  await prisma.websiteDailyMetric.deleteMany();
+  await prisma.websiteBreakdown.deleteMany();
   await prisma.postMetrics.deleteMany();
   await prisma.post.deleteMany();
   await prisma.metricSnapshot.deleteMany();
@@ -20,6 +23,9 @@ async function main() {
   await prisma.teamInvite.deleteMany();
   await prisma.teamMember.deleteMany();
   await prisma.aiSettings.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
+  await prisma.auditLog.deleteMany();
+  await prisma.apiKey.deleteMany();
   console.log("Installation data cleared. The owner account and environment configuration were preserved.");
 }
 

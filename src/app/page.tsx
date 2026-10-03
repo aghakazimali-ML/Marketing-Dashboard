@@ -124,7 +124,7 @@ function OverviewContent() {
       </section>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <InsightPill label="Best-performing platform" value={data.bestPlatform ? `${platformLabel(data.bestPlatform.platform)} (${formatMetric(data.bestPlatform.engagementRate, "percent")} ER)` : "—"} />
+        <InsightPill label="Highest engagement rate (definitions differ by platform)" value={data.bestPlatform ? `${platformLabel(data.bestPlatform.platform)} (${formatMetric(data.bestPlatform.engagementRate, "percent")} ER)` : "—"} />
         <InsightPill label="Best LinkedIn page" value={data.bestLinkedIn ? `${data.bestLinkedIn.name} (${formatMetric(data.bestLinkedIn.engagementRate, "percent")} ER)` : "—"} />
         <InsightPill label="Top post this period" value={data.topPost ? `${data.topPost.channelName} · ${formatMetric(data.topPost.engagement, "number", true)} eng.` : data.postsLocked ? "Post analytics need Starter" : "—"} />
       </div>

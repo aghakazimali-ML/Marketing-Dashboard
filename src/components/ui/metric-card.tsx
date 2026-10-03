@@ -60,7 +60,7 @@ export function MetricCard({
       {empty ? <p className="mt-2 text-xs text-muted">{reasonText}</p> : null}
       {hint ? <p className="mt-2 text-xs text-muted">{hint}</p> : null}
       {!empty && includes && includes.length ? (
-        <p className="mt-2 text-[11px] text-muted">Includes {includes.map((p) => p.toLowerCase()).join(", ")}</p>
+        <p className="mt-2 text-[11px] text-muted">Includes {includes.map((p) => p.charAt(0) + p.slice(1).toLowerCase()).join(", ")}</p>
       ) : null}
     </div>
   );

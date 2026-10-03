@@ -60,3 +60,6 @@ CLAUDE.md
 check_token.ts
 # test database
 /prisma/test.db*
+
+# local backups
+/backups
