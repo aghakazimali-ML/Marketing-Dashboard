@@ -285,7 +285,7 @@ describe("entitlements expose the detected region (no selector)", () => {
     const call = async (c: string) => (await entitlements(new NextRequest("http://localhost/api/billing/entitlements", { headers: { cookie, "cf-ipcountry": c } }))).json();
     const pk = await call("PK");
     expect(pk.billing).toMatchObject({ region: "PK", currency: "PKR", provider: "SAFEPAY", country: "PK" });
-    expect(pk.billing.safepay.quotes.PRO.month.amountPkr).toBe(12999);
+    expect(pk.billing.safepay.quotes.PRO.month.amountPkr).toBe(5250);
     const us = await call("US");
     expect(us.billing).toMatchObject({ region: "INTL", currency: "USD", provider: "LEMONSQUEEZY", country: "US" });
     expect(us.billing.lemonsqueezy.available.PRO).toEqual({ month: true, year: true });

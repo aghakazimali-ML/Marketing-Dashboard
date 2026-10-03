@@ -133,8 +133,10 @@ function BillingContent() {
                 <h2 className="font-display text-xl text-navy-900">{p.name}</h2>
                 {isCurrent ? <span className="rounded bg-teal-500/15 px-2 py-0.5 text-[11px] font-semibold text-teal-600">Current</span> : id === "PRO" ? <span className="rounded bg-lime/30 px-2 py-0.5 text-[11px] font-semibold text-navy-900">Popular</span> : null}
               </div>
+              {currency === "PKR" && p.pkrRegularMonthly ? <p className="mt-1 text-[11px] font-semibold text-teal-600">🇵🇰 Special offer for Pakistan</p> : null}
               <p className="mt-1 text-xs text-muted">{p.tagline}</p>
               <p className="mt-4 font-display text-3xl text-navy-900">
+                {currency === "PKR" && p.pkrRegularMonthly ? <span className="mr-2 text-base font-normal text-muted line-through">{formatMoney(p.pkrRegularMonthly, currency)}</span> : null}
                 {formatMoney(price, currency)}
                 {price > 0 ? <span className="text-sm font-normal text-muted"> /month{interval === "year" ? ", billed yearly" : ""}</span> : null}
               </p>
