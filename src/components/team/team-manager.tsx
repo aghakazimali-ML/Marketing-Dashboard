@@ -4,7 +4,11 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Copy, Eye, RefreshCw, UserRoundX, UserRoundCheck, X } from "lucide-react";
 import { format } from "date-fns";
 import { SectionCard } from "@/components/ui/section-card";
-import { DASHBOARD_NAME } from "@/lib/brand";
+import { AuditLog } from "@/components/team/audit-log";
+import { useEntitlements, useBrand } from "@/components/providers/entitlements-provider";
+import { useConfirm } from "@/components/providers/confirm-provider";
+import { EmptyState, TableSkeleton } from "@/components/ui/states";
+import Link from "next/link";
 
 type TeamMember = {
   id: string;
@@ -25,6 +29,9 @@ type TeamInvite = {
 };
 
 export function TeamManager() {
+  const DASHBOARD_NAME = useBrand();
+  const { data: ent, reload: reloadEntitlements } = useEntitlements();
+  const confirm = useConfirm();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invites, setInvites] = useState<TeamInvite[]>([]);
   const [email, setEmail] = useState("");
@@ -83,6 +90,7 @@ export function TeamManager() {
       setInviteMessage(data.emailMessage ?? (data.emailSent ? "Invitation email sent." : "Invitation created."));
       setEmail("");
       await load();
+      void reloadEntitlements();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create invitation.");
     } finally {
@@ -92,6 +100,18 @@ export function TeamManager() {
 
   async function updateMember(member: TeamMember, update: Partial<Pick<TeamMember, "role" | "isActive">>) {
     setError(null);
+    if (update.isActive === false || update.role === "ANALYST") {
+      const ok = await confirm({
+        title: update.isActive === false ? `Disable ${member.email}?` : `Make ${member.email} an analyst?`,
+        body: "They will be signed out everywhere immediately.",
+        confirmLabel: update.isActive === false ? "Disable account" : "Change role",
+        danger: update.isActive === false,
+      });
+      if (!ok) {
+        await load();
+        return;
+      }
+    }
     const response = await fetch("/api/auth/team", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -103,6 +123,7 @@ export function TeamManager() {
       return;
     }
     await load();
+    void reloadEntitlements();
   }
 
   async function revokeInvite(invite: TeamInvite) {
@@ -126,6 +147,12 @@ export function TeamManager() {
   return (
     <div className="space-y-6">
       <SectionCard title="Invite a teammate" subtitle="Invitations expire after seven days and can only be used once.">
+        {ent && ent.plan.limits.seats !== null ? (
+          <p className="mb-3 text-xs text-muted">
+            {ent.usage.seats + ent.usage.pendingInvites} of {ent.plan.limits.seats} seats used on the {ent.plan.name} plan (including pending invitations).{" "}
+            {ent.usage.seats + ent.usage.pendingInvites >= ent.plan.limits.seats ? <Link href="/billing" className="font-medium text-teal-600 underline">Upgrade for more</Link> : null}
+          </p>
+        ) : null}
         <form onSubmit={createInvite} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem_auto] sm:items-end">
           <label className="block text-sm">
             <span className="mb-1 block text-[11px] font-semibold text-muted uppercase">Email</span>
@@ -135,7 +162,7 @@ export function TeamManager() {
               maxLength={254}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+              className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
               autoComplete="email"
             />
           </label>
@@ -144,7 +171,7 @@ export function TeamManager() {
             <select
               value={role}
               onChange={(event) => setRole(event.target.value as "ADMIN" | "ANALYST")}
-              className="w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-teal-500"
+              className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
             >
               <option value="ANALYST">Analyst</option>
               <option value="ADMIN">Administrator</option>
@@ -153,7 +180,7 @@ export function TeamManager() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+            className="rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50"
           >
             {saving ? "Creating…" : "Create invite"}
           </button>
@@ -216,13 +243,13 @@ export function TeamManager() {
 
       <SectionCard title="Team members">
         {loading ? (
-          <p className="text-sm text-muted">Loading team…</p>
+          <TableSkeleton rows={3} />
         ) : members.length === 0 ? (
-          <p className="text-sm text-muted">No team accounts yet.</p>
+          <EmptyState title="No team accounts yet" body="Invite a teammate above." />
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-sand-100/80 text-left">
+              <thead className="table-head text-left">
                 <tr>
                   { ["Name", "Email", "Role", "Status", "Joined", ""].map((heading) => (
                     <th key={heading || "actions"} className="px-3 py-3 text-[11px] font-semibold text-muted uppercase">
@@ -244,7 +271,7 @@ export function TeamManager() {
                           aria-label={`Role for ${member.email}`}
                           value={member.role}
                           onChange={(event) => void updateMember(member, { role: event.target.value as "ADMIN" | "ANALYST" })}
-                          className="rounded border border-line bg-white px-2 py-1 text-xs"
+                          className="rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
                         >
                           <option value="ANALYST">Analyst</option>
                           <option value="ADMIN">Administrator</option>
@@ -304,6 +331,7 @@ export function TeamManager() {
           <RefreshCw size={13} aria-hidden="true" /> Refresh
         </button>
       </SectionCard>
+      <AuditLog />
     </div>
   );
 }

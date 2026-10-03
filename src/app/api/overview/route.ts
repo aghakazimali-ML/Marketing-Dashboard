@@ -1,118 +1,115 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/authorization";
 import { Platform } from "@/generated/prisma/client";
-import { parseRangeParams } from "@/lib/metrics/params";
+import { resolveRequestRange } from "@/lib/metrics/request";
+import { previousRange } from "@/lib/metrics/periods";
 import {
   getChannelMetricsForRange,
   getPostsForRange,
+  getSeries,
   getWebsiteMetrics,
-  rankBy,
+  leaderBy,
+  type SeriesGrain,
 } from "@/lib/metrics/queries";
 import { prisma } from "@/lib/db";
+import { ratioPct } from "@/lib/metrics/aggregate";
+import { deltaPct, totalFor } from "@/lib/metrics/totals";
+import { lastSuccessfulSync } from "@/lib/sync";
+
+const SOCIAL: Platform[] = [Platform.LINKEDIN, Platform.FACEBOOK, Platform.INSTAGRAM, Platform.YOUTUBE];
 
 export async function GET(req: NextRequest) {
   const access = await requireUser(req);
   if (!access.ok) return access.response;
 
   const sp = Object.fromEntries(req.nextUrl.searchParams);
-  const range = parseRangeParams(sp);
+  const { range, plan, clamped } = await resolveRequestRange(sp);
+  const prev = previousRange(range);
+  const compare = plan.features.periodComparison;
+  const grain: SeriesGrain = sp.grain === "week" || sp.grain === "month" ? sp.grain : "day";
+  const seriesPlatforms =
+    sp.platform && SOCIAL.includes(sp.platform.toUpperCase() as Platform)
+      ? [sp.platform.toUpperCase() as Platform]
+      : SOCIAL;
 
-  const socialPlatforms: Platform[] = [
-    Platform.LINKEDIN,
-    Platform.FACEBOOK,
-    Platform.INSTAGRAM,
-    Platform.YOUTUBE,
-  ];
-
-  const [social, website, posts] = await Promise.all([
-    getChannelMetricsForRange(socialPlatforms, range),
+  const [social, prevSocial, website, prevWebsite, posts, series, channelCount, last] = await Promise.all([
+    getChannelMetricsForRange(SOCIAL, range),
+    compare ? getChannelMetricsForRange(SOCIAL, prev) : Promise.resolve([]),
     getWebsiteMetrics(range),
-    getPostsForRange(range),
+    compare ? getWebsiteMetrics(prev) : Promise.resolve(null),
+    plan.features.posts ? getPostsForRange(range) : Promise.resolve([]),
+    getSeries(seriesPlatforms, range, grain),
+    prisma.channel.count({ where: { isActive: true } }),
+    lastSuccessfulSync(),
   ]);
 
-  const byPlatform = socialPlatforms.map((p) => {
+  const byPlatform = SOCIAL.map((p) => {
     const rows = social.filter((r) => r.platform === p);
-    const impressions = rows.reduce((s, r) => s + r.impressions, 0);
-    const engagement = rows.reduce((s, r) => s + r.engagement, 0);
-    const followers = rows.reduce((s, r) => s + r.followers, 0);
-    const newFollowers = rows.reduce((s, r) => s + r.newFollowers, 0);
-    const clicks = rows.reduce((s, r) => s + r.clicks, 0);
-    const reach = rows.reduce((s, r) => s + r.reach, 0);
+    const impressions = totalFor(rows, "impressions").value;
+    const engagement = totalFor(rows, "engagement").value;
+    const reach = totalFor(rows, "reach").value;
     return {
       platform: p,
-      followers,
-      newFollowers,
+      connected: rows.length > 0,
+      followers: totalFor(rows, "followers").value,
+      newFollowers: totalFor(rows, "newFollowers").value,
       impressions,
       engagement,
-      clicks,
+      clicks: totalFor(rows, "clicks").value,
       reach,
-      engagementRate:
-        impressions > 0 ? Number(((engagement / impressions) * 100).toFixed(2)) : 0,
+      engagementRate: p === "INSTAGRAM" ? ratioPct(engagement, reach) : ratioPct(engagement, impressions),
     };
   });
 
-  const totals = {
-    followers: byPlatform.reduce((s, p) => s + p.followers, 0),
-    impressions: byPlatform.reduce((s, p) => s + p.impressions, 0),
-    reach: byPlatform.reduce((s, p) => s + p.reach, 0),
-    engagement: byPlatform.reduce((s, p) => s + p.engagement, 0),
-    clicks: byPlatform.reduce((s, p) => s + p.clicks, 0),
-    newFollowers: byPlatform.reduce((s, p) => s + p.newFollowers, 0),
-  };
-  const avgEngagementRate =
-    totals.impressions > 0
-      ? Number(((totals.engagement / totals.impressions) * 100).toFixed(2))
-      : 0;
-  const bestPlatform = rankBy(byPlatform, (p) => p.engagementRate)[0];
+  const keys = ["followers", "impressions", "reach", "engagement", "clicks", "newFollowers"] as const;
+  const totals = Object.fromEntries(
+    keys.map((k) => {
+      const cur = totalFor(social, k);
+      const before = totalFor(prevSocial, k);
+      return [k, { ...cur, delta: compare ? deltaPct(cur.value, before.value) : undefined }];
+    })
+  );
+  const impTotal = totalFor(social, "impressions");
+  const engTotal = totalFor(social, "engagement");
+  // Engagement rate only compares platforms that report both numbers.
+  const both = social.filter((r) => r.impressions !== null && r.engagement !== null && r.platform !== "INSTAGRAM");
+  const rate = ratioPct(totalFor(both, "engagement").value, totalFor(both, "impressions").value);
+  const prevBoth = prevSocial.filter((r) => r.impressions !== null && r.engagement !== null && r.platform !== "INSTAGRAM");
+  const prevRate = ratioPct(totalFor(prevBoth, "engagement").value, totalFor(prevBoth, "impressions").value);
+
   const linkedin = social.filter((r) => r.platform === Platform.LINKEDIN);
-  const bestLinkedIn = rankBy(linkedin, (r) => r.engagementRate)[0];
-  const topPost = rankBy(posts, (p) => p.engagement)[0];
-
-  // Monthly trend for last 6 months from DB (LinkedIn aggregate impressions)
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const liChannels = await prisma.channel.findMany({
-    where: { platform: Platform.LINKEDIN },
-    include: {
-      snapshots: {
-        where: { periodStart: { gte: sixMonthsAgo } },
-        orderBy: { periodStart: "asc" },
-      },
-    },
-  });
-
-  const trendMap = new Map<string, { month: string; impressions: number; engagement: number }>();
-  for (const ch of liChannels) {
-    for (const s of ch.snapshots) {
-      // Only include roughly monthly snapshots (span >= 20 days)
-      const days =
-        (s.periodEnd.getTime() - s.periodStart.getTime()) / (1000 * 60 * 60 * 24);
-      if (days < 20) continue;
-      const key = `${s.periodStart.getFullYear()}-${s.periodStart.getMonth()}`;
-      const label = s.periodStart.toLocaleString("en", { month: "short" });
-      const existing = trendMap.get(key) ?? { month: label, impressions: 0, engagement: 0 };
-      existing.impressions += s.impressions;
-      existing.engagement += s.engagement;
-      trendMap.set(key, existing);
-    }
-  }
+  const bestPlatform = leaderBy(byPlatform, (p) => p.engagementRate);
+  const topPost = posts
+    .filter((p) => p.engagement !== null)
+    .sort((a, b) => (b.engagement ?? 0) - (a.engagement ?? 0))[0];
 
   return NextResponse.json({
-    range: {
-      label: range.label,
-      start: range.start.toISOString(),
-      end: range.end.toISOString(),
-    },
+    range: { label: range.label, start: range.start.toISOString(), end: range.end.toISOString() },
+    hasChannels: channelCount > 0,
+    clamped,
+    historyDays: plan.limits.historyDays,
+    comparisonLocked: !compare,
+    postsLocked: !plan.features.posts,
+    lastSuccessAt: last?.finishedAt ?? null,
     totals: {
       ...totals,
-      avgEngagementRate,
-      websiteUsers: website.users,
-      websiteSessions: website.sessions,
+      engagementRate: { value: rate, platforms: [...new Set(both.map((r) => r.platform))], delta: compare ? deltaPct(rate, prevRate) : undefined },
+      websiteUsers: { value: website.users, platforms: website.connected ? ["WEBSITE"] : [], delta: compare && prevWebsite ? deltaPct(website.users, prevWebsite.users) : undefined },
+      websiteSessions: { value: website.sessions, platforms: website.connected ? ["WEBSITE"] : [], delta: compare && prevWebsite ? deltaPct(website.sessions, prevWebsite.sessions) : undefined },
     },
+    impressionsPlatforms: impTotal.platforms,
+    engagementPlatforms: engTotal.platforms,
+    websiteConnected: website.connected,
     byPlatform,
-    bestPlatform,
-    bestLinkedIn,
-    topPost,
-    trend: Array.from(trendMap.values()),
+    bestPlatform: bestPlatform ? { platform: bestPlatform.platform, engagementRate: bestPlatform.engagementRate } : null,
+    bestLinkedIn: (() => {
+      const l = leaderBy(linkedin, (r) => r.engagementRate);
+      return l ? { name: l.name, engagementRate: l.engagementRate, impressions: l.impressions } : null;
+    })(),
+    topPost: topPost
+      ? { title: topPost.title, platform: topPost.platform, channelName: topPost.channelName, engagement: topPost.engagement, publishedAt: topPost.publishedAt }
+      : null,
+    series,
+    grain,
   });
 }

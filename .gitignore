@@ -58,3 +58,8 @@ CLAUDE.md
 
 # Local scripts containing sensitive/debug logic
 check_token.ts
+# test database
+/prisma/test.db*
+
+# local backups
+/backups

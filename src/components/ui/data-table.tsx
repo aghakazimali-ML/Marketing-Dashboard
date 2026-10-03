@@ -2,13 +2,15 @@
 
 import clsx from "clsx";
 import { useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 
 export type Column<T> = {
   key: string;
   header: string;
   align?: "left" | "right" | "center";
   sortable?: boolean;
-  sortValue?: (row: T) => string | number;
+  /** Return null for "no value": those rows always sort last. */
+  sortValue?: (row: T) => string | number | null;
   render: (row: T) => React.ReactNode;
   className?: string;
 };
@@ -19,12 +21,17 @@ export function DataTable<T>({
   rowKey,
   highlightBest,
   getHighlightValue,
+  caption,
+  emptyMessage = "No data for this period.",
 }: {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string;
   highlightBest?: boolean;
-  getHighlightValue?: (row: T) => number;
+  getHighlightValue?: (row: T) => number | null;
+  /** Accessible table name. */
+  caption?: string;
+  emptyMessage?: string;
 }) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -32,31 +39,31 @@ export function DataTable<T>({
   const sorted = useMemo(() => {
     if (!sortKey) return rows;
     const col = columns.find((c) => c.key === sortKey);
-    if (!col?.sortValue) return rows;
+    const get = col?.sortValue;
+    if (!get) return rows;
     return [...rows].sort((a, b) => {
-      const av = col.sortValue!(a);
-      const bv = col.sortValue!(b);
-      if (typeof av === "number" && typeof bv === "number") {
-        return sortDir === "desc" ? bv - av : av - bv;
-      }
-      return sortDir === "desc"
-        ? String(bv).localeCompare(String(av))
-        : String(av).localeCompare(String(bv));
+      const av = get(a);
+      const bv = get(b);
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      const cmp =
+        typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
+      return sortDir === "desc" ? -cmp : cmp;
     });
   }, [rows, sortKey, sortDir, columns]);
 
-  const bestId =
-    highlightBest && getHighlightValue && sorted.length
-      ? rowKey(
-          [...sorted].sort((a, b) => getHighlightValue(b) - getHighlightValue(a))[0]
-        )
-      : null;
+  const bestId = useMemo(() => {
+    if (!highlightBest || !getHighlightValue) return null;
+    const scored = sorted.filter((r) => getHighlightValue(r) !== null);
+    if (!scored.length) return null;
+    return rowKey(scored.reduce((best, r) => ((getHighlightValue(r) as number) > (getHighlightValue(best) as number) ? r : best)));
+  }, [sorted, highlightBest, getHighlightValue, rowKey]);
 
   function onSort(col: Column<T>) {
     if (!col.sortable) return;
-    if (sortKey === col.key) {
-      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
-    } else {
+    if (sortKey === col.key) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    else {
       setSortKey(col.key);
       setSortDir("desc");
     }
@@ -65,38 +72,50 @@ export function DataTable<T>({
   return (
     <div className="crazy-card overflow-x-auto rounded-xl border border-white/50">
       <table className="min-w-full text-sm">
-        <thead className="bg-gradient-to-r from-[#d4f5e4]/80 via-white/50 to-[#e0f7ff]/80 text-left">
+        {caption ? <caption className="sr-only">{caption}</caption> : null}
+        <thead className="table-head text-left">
           <tr>
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className={clsx(
-                  "px-3 py-3 text-[11px] font-semibold tracking-[0.06em] text-muted uppercase whitespace-nowrap",
-                  col.align === "right" && "text-right",
-                  col.align === "center" && "text-center",
-                  col.sortable && "cursor-pointer select-none hover:text-navy-900",
-                  col.className
-                )}
-                onClick={() => onSort(col)}
-              >
-                {col.header}
-                {sortKey === col.key ? (sortDir === "desc" ? " ↓" : " ↑") : ""}
-              </th>
-            ))}
+            {columns.map((col) => {
+              const active = sortKey === col.key;
+              return (
+                <th
+                  key={col.key}
+                  scope="col"
+                  aria-sort={col.sortable ? (active ? (sortDir === "desc" ? "descending" : "ascending") : "none") : undefined}
+                  className={clsx(
+                    "px-3 py-3 text-[11px] font-semibold tracking-[0.06em] text-muted uppercase whitespace-nowrap",
+                    col.align === "right" && "text-right",
+                    col.align === "center" && "text-center",
+                    col.className
+                  )}
+                >
+                  {col.sortable ? (
+                    <button
+                      type="button"
+                      onClick={() => onSort(col)}
+                      className={clsx("inline-flex items-center gap-1 uppercase hover:text-navy-900", col.align === "right" && "flex-row-reverse")}
+                    >
+                      {col.header}
+                      {active ? (
+                        sortDir === "desc" ? <ArrowDown size={12} aria-hidden="true" /> : <ArrowUp size={12} aria-hidden="true" />
+                      ) : (
+                        <ChevronsUpDown size={12} aria-hidden="true" className="opacity-50" />
+                      )}
+                    </button>
+                  ) : (
+                    col.header
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
           {sorted.map((row) => {
             const id = rowKey(row);
             return (
-              <tr
-                key={id}
-                className={clsx(
-                  "border-t border-line/80",
-                  bestId === id && "bg-teal-500/5"
-                )}
-              >
-                {columns.map((col) => (
+              <tr key={id} className={clsx("border-t border-line/80", bestId === id && "bg-teal-500/10")}>
+                {columns.map((col, ci) => (
                   <td
                     key={col.key}
                     className={clsx(
@@ -107,6 +126,7 @@ export function DataTable<T>({
                     )}
                   >
                     {col.render(row)}
+                    {ci === 0 && bestId === id ? <span className="sr-only"> (highest value)</span> : null}
                   </td>
                 ))}
               </tr>
@@ -114,11 +134,8 @@ export function DataTable<T>({
           })}
           {sorted.length === 0 && (
             <tr>
-              <td
-                colSpan={columns.length}
-                className="px-3 py-10 text-center text-muted"
-              >
-                No data for this period.
+              <td colSpan={columns.length} className="px-3 py-10 text-center text-muted">
+                {emptyMessage}
               </td>
             </tr>
           )}

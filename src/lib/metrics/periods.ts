@@ -117,3 +117,30 @@ export function formatDuration(seconds: number): string {
   const s = Math.round(seconds % 60);
   return `${m}m ${s}s`;
 }
+
+/** The period of equal length immediately before `range` (for "vs previous period" deltas). */
+export function previousRange(range: DateRange): DateRange {
+  const spanMs = range.end.getTime() - range.start.getTime() + 1;
+  const end = new Date(range.start.getTime() - 1);
+  const start = new Date(end.getTime() - spanMs + 1);
+  return { preset: "custom", start: startOfDay(start), end: endOfDay(end), label: "Previous period" };
+}
+
+const DAY_MS = 86_400_000;
+
+/** Validate a user-entered custom range. Returns an error message or null when valid. */
+export function validateCustomRange(start: Date | null, end: Date | null, now = new Date()): string | null {
+  if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "Enter a valid start and end date.";
+  }
+  if (start > end) return "The start date must be on or before the end date.";
+  if (startOfDay(end) > endOfDay(now)) return "The end date cannot be in the future.";
+  if ((end.getTime() - start.getTime()) / DAY_MS > 366 * 2) return "Choose a range of two years or less.";
+  return null;
+}
+
+export const PRESET_VALUES = PRESET_OPTIONS.map((o) => o.value);
+
+export function isDatePreset(value: string | null | undefined): value is DatePreset {
+  return Boolean(value && (PRESET_VALUES as string[]).includes(value));
+}

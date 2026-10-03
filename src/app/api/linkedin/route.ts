@@ -1,38 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/authorization";
 import { Platform } from "@/generated/prisma/client";
-import { parseRangeParams } from "@/lib/metrics/params";
-import {
-  getChannelMetricsForRange,
-  getPostsForRange,
-  rankBy,
-} from "@/lib/metrics/queries";
+import { resolveRequestRange } from "@/lib/metrics/request";
+import { gateFeature } from "@/lib/billing/workspace";
+import { getChannelMetricsForRange, getPostsForRange, leaderBy, rankBy } from "@/lib/metrics/queries";
 
 export async function GET(req: NextRequest) {
   const access = await requireUser(req);
   if (!access.ok) return access.response;
 
   const sp = Object.fromEntries(req.nextUrl.searchParams);
-  const range = parseRangeParams(sp);
+  const { range, plan } = await resolveRequestRange(sp);
   const battleboard = sp.battleboard === "1";
+  if (battleboard) {
+    const gate = await gateFeature("battleboard");
+    if (!gate.ok) return gate.response;
+  }
 
   const rows = await getChannelMetricsForRange(Platform.LINKEDIN, range);
-  const posts = await getPostsForRange(range, Platform.LINKEDIN);
+  const posts = plan.features.posts ? await getPostsForRange(range, Platform.LINKEDIN) : [];
 
   if (!battleboard) {
     return NextResponse.json({ rows, posts });
   }
 
+  // A leader only exists if at least one page reported that metric; "best average" needs both inputs.
   const leaders = {
-    engagementRate: rankBy(rows, (r) => r.engagementRate)[0],
-    followerGrowth: rankBy(rows, (r) => r.newFollowers)[0],
-    impressions: rankBy(rows, (r) => r.impressions)[0],
-    clicks: rankBy(rows, (r) => r.clicks)[0],
-    mostActive: rankBy(rows, (r) => r.postCount)[0],
-    bestAverage: rankBy(rows, (r) => r.engagementRate * Math.log10(r.impressions + 10))[0],
+    engagementRate: leaderBy(rows, (r) => r.engagementRate),
+    followerGrowth: leaderBy(rows, (r) => r.newFollowers),
+    impressions: leaderBy(rows, (r) => r.impressions),
+    clicks: leaderBy(rows, (r) => r.clicks),
+    mostActive: leaderBy(rows, (r) => r.postCount),
+    bestAverage: leaderBy(rows, (r) =>
+      r.engagementRate !== null && r.impressions !== null ? r.engagementRate * Math.log10(r.impressions + 10) : null
+    ),
   };
 
-  const bestPost = rankBy(posts, (p) => p.engagement)[0];
+  const bestPost = leaderBy(posts, (p) => p.engagement);
 
   return NextResponse.json({
     rows,

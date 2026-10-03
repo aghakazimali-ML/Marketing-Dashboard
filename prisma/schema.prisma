@@ -23,6 +23,11 @@ enum SyncStatus {
   SKIPPED
 }
 
+enum ConnectionStatus {
+  ACTIVE
+  NEEDS_RECONNECT
+}
+
 enum TeamRole {
   ADMIN
   ANALYST
@@ -40,6 +45,8 @@ model DashboardOwner {
   name         String
   email        String   @unique
   passwordHash String
+  /// Bumped on password change / revocation; embedded in the session JWT.
+  sessionVersion Int    @default(0)
   createdAt    DateTime @default(now())
 }
 
@@ -50,6 +57,7 @@ model TeamMember {
   passwordHash String
   role         TeamRole @default(ANALYST)
   isActive     Boolean  @default(true)
+  sessionVersion Int    @default(0)
   createdAt    DateTime @default(now())
 
   @@index([role, isActive])
@@ -92,16 +100,31 @@ model Channel {
   /// Extra notes for the marketing team (who owns the page, etc.)
   notes       String?
   isActive    Boolean  @default(true)
+  /// ACTIVE until an auth failure marks it NEEDS_RECONNECT.
+  connectionStatus ConnectionStatus @default(ACTIVE)
+  /// OAuth refresh token (encrypted). Null when a manual token is used.
+  refreshToken     String?
+  tokenExpiresAt   DateTime?
+  lastSuccessAt    DateTime?
+  /// Short, client-safe summary of the last failure.
+  lastError        String?
+  /// When the "token expires soon" email was last sent for this token.
+  expiryWarnedAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  snapshots MetricSnapshot[]
-  posts     Post[]
+  snapshots     MetricSnapshot[]
+  dailyMetrics  ChannelDailyMetric[]
+  websiteDaily  WebsiteDailyMetric[]
+  breakdowns    WebsiteBreakdown[]
+  posts         Post[]
 
   @@unique([platform, name])
   @@index([platform])
 }
 
+/// LEGACY (read-only history). Superseded by ChannelDailyMetric; never used for totals
+/// because overlapping periods double counted.
 model MetricSnapshot {
   id             String   @id @default(cuid())
   channelId      String
@@ -139,7 +162,7 @@ model Post {
   id           String   @id @default(cuid())
   channelId    String
   platform     Platform
-  externalId   String?
+  externalId   String
   title        String?
   content      String?
   thumbnailUrl String?
@@ -151,32 +174,108 @@ model Post {
   channel Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
   metrics PostMetrics[]
 
+  @@unique([channelId, externalId])
   @@index([platform, publishedAt])
   @@index([channelId])
 }
 
+/// One row per post per UTC day (lifetime counters as of that day). Re-fetching overwrites.
 model PostMetrics {
   id             String   @id @default(cuid())
   postId         String
-  syncedAt       DateTime @default(now())
-  periodStart    DateTime
-  periodEnd      DateTime
-  likes          Int      @default(0)
-  comments       Int      @default(0)
-  shares         Int      @default(0)
-  impressions    Int      @default(0)
-  reach          Int      @default(0)
-  clicks         Int      @default(0)
-  saves          Int      @default(0)
-  views          Int      @default(0)
-  engagementRate Float    @default(0)
-  ctr            Float    @default(0)
+  date           DateTime
+  fetchedAt      DateTime @default(now())
+  likes          Int?
+  comments       Int?
+  shares         Int?
+  impressions    Int?
+  reach          Int?
+  clicks         Int?
+  saves          Int?
+  views          Int?
+  engagementRate Float?
+  ctr            Float?
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@index([postId, periodStart, periodEnd])
+  @@unique([postId, date])
+  @@index([date])
 }
 
+/// One row per channel per UTC day. Null = the platform did not provide the metric.
+model ChannelDailyMetric {
+  id               String   @id @default(cuid())
+  channelId        String
+  date             DateTime
+  /// End-of-day follower / subscriber count.
+  followers        Int?
+  /// Followers gained that day, when the API reports it directly.
+  newFollowers     Int?
+  impressions      Int?
+  reach            Int?
+  engagement       Int?
+  likes            Int?
+  comments         Int?
+  shares           Int?
+  clicks           Int?
+  saves            Int?
+  profileVisits    Int?
+  videoViews       Int?
+  watchTimeMin     Float?
+  avgViewDurSec    Float?
+  returningViewers Int?
+  postCount        Int?
+  /// API name + version that produced the row, e.g. "linkedin:202511".
+  source           String
+  fetchedAt        DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, date])
+  @@index([date])
+}
+
+model WebsiteDailyMetric {
+  id                    String   @id @default(cuid())
+  propertyChannelId     String
+  date                  DateTime
+  users                 Int?
+  sessions              Int?
+  newUsers              Int?
+  /// Percent 0-100.
+  bounceRate            Float?
+  avgSessionDurationSec Float?
+  /// GA4 key events.
+  conversions           Int?
+  source                String
+  fetchedAt             DateTime @default(now())
+
+  channel Channel @relation(fields: [propertyChannelId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyChannelId, date])
+  @@index([date])
+}
+
+/// GA4 traffic sources and landing pages, one row per day per key.
+model WebsiteBreakdown {
+  id          String   @id @default(cuid())
+  channelId   String
+  date        DateTime
+  /// SOURCE or LANDING_PAGE
+  kind        String
+  key         String
+  users       Int?
+  sessions    Int?
+  bounceRate  Float?
+  fetchedAt   DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, date, kind, key])
+  @@index([date, kind])
+}
+
+/// LEGACY (read-only history). Superseded by WebsiteDailyMetric.
 model WebsiteSnapshot {
   id                   String   @id @default(cuid())
   syncedAt             DateTime @default(now())
@@ -203,6 +302,94 @@ model SyncRun {
   startedAt  DateTime   @default(now())
   finishedAt DateTime?
   message    String?
+  /// Short, client-safe summary.
   error      String?
+  /// Full upstream detail (admins only). Never contains tokens.
+  detail     String?
   recordsUpserted Int   @default(0)
+  trigger    String     @default("manual")
+
+  @@index([startedAt])
+}
+
+/// Single-row mutex so two fetches never run at once.
+model SyncLock {
+  id          String   @id
+  lockedUntil DateTime
+  owner       String
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  actorEmail String?
+  actorRole  String?
+  action     String
+  target     String?
+  success    Boolean  @default(true)
+  ip         String?
+  meta       String?
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+model PasswordResetToken {
+  id          String    @id @default(cuid())
+  subjectType String    // OWNER | MEMBER
+  subjectId   String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([subjectType, subjectId])
+  @@index([expiresAt])
+}
+
+/// Singleton describing this installation's subscription / licence.
+model Workspace {
+  id                   Int       @id @default(1)
+  plan                 Plan      @default(FREE)
+  planStatus           String    @default("active") // active | trialing | past_due | canceled
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  billingInterval      String?   // month | year
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  /// White-label product name (Exclusive plan).
+  brandName            String?
+  /// Scheduled email digest: NONE | WEEKLY | MONTHLY (Pro+).
+  reportFrequency      String    @default("NONE")
+  /// Comma separated extra recipients; admins always receive it.
+  reportRecipients     String?
+  lastReportAt         DateTime?
+  updatedAt            DateTime  @updatedAt
+}
+
+/// Read-only REST API keys (Exclusive plan). Only a hash of the key is stored.
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  /// First characters of the key, shown in the UI to identify it.
+  prefix     String
+  keyHash    String    @unique
+  createdBy  String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+}
+
+/// Processed Stripe webhook events (idempotency).
+model StripeEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  EXCLUSIVE
 }

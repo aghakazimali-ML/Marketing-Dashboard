@@ -11,7 +11,13 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:clear-data": "tsx scripts/clear_installation_data.ts",
-    "sync": "tsx scripts/sync.ts"
+    "sync": "tsx scripts/sync.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "rotate-secrets": "tsx scripts/rotate_secrets.ts",
+    "create-owner": "tsx scripts/create_owner.ts",
+    "backup": "tsx scripts/backup.ts",
+    "restore": "tsx scripts/restore_backup.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.9.1",
@@ -20,28 +26,35 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "jose": "^6.2.8",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.28.0",
-    "next": "16.2.12",
+    "next": "^16.3.8",
+    "prisma": "^7.10.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.10.1",
-    "xlsx": "^0.18.5",
+    "stripe": "^23.0.0",
+    "tsx": "^4.23.15",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^20",
+    "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.12",
-    "prisma": "^7.9.1",
+    "eslint-config-next": "^16.3.8",
     "tailwindcss": "^4",
-    "tsx": "^4.23.5",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "deepmerge-ts": "^8.0.0",
+    "mysql2": "^3.23.1"
   }
 }

@@ -5,6 +5,8 @@ import { encryptSecret, hasSecret } from "@/lib/crypto/secrets";
 import { isSafeExternalId } from "@/lib/security/sanitize";
 import { rateLimit } from "@/lib/security/rate-limit";
 import { requireAdmin, requireUser } from "@/lib/auth/authorization";
+import { audit } from "@/lib/audit";
+import { getUsage, getWorkspace, planLimitResponse } from "@/lib/billing/workspace";
 import { z } from "zod";
 
 function serializeChannel(ch: {
@@ -18,6 +20,11 @@ function serializeChannel(ch: {
   apiKey: string | null;
   notes: string | null;
   isActive: boolean;
+  connectionStatus: "ACTIVE" | "NEEDS_RECONNECT";
+  refreshToken: string | null;
+  tokenExpiresAt: Date | null;
+  lastSuccessAt: Date | null;
+  lastError: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -34,6 +41,11 @@ function serializeChannel(ch: {
     updatedAt: ch.updatedAt,
     hasAccessToken: hasSecret(ch.accessToken),
     hasApiKey: hasSecret(ch.apiKey),
+    connectionStatus: ch.connectionStatus,
+    oauthConnected: hasSecret(ch.refreshToken) || Boolean(ch.tokenExpiresAt),
+    tokenExpiresAt: ch.tokenExpiresAt,
+    lastSuccessAt: ch.lastSuccessAt,
+    lastError: ch.lastError,
   };
 }
 
@@ -79,7 +91,7 @@ export async function POST(req: NextRequest) {
   const access = await requireAdmin(req);
   if (!access.ok) return access.response;
 
-  const limited = rateLimit(`channels:${req.headers.get("x-forwarded-for") || "local"}`, 30, 60_000);
+  const limited = rateLimit(`channels:${access.session.email}`, 30, 60_000);
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Too many requests" },
@@ -105,6 +117,12 @@ export async function POST(req: NextRequest) {
         { error: "Invalid Organization / Page ID format" },
         { status: 400 }
       );
+    }
+
+    const [ws, usage] = await Promise.all([getWorkspace(), getUsage()]);
+    const maxChannels = ws.plan.limits.channels;
+    if ((body.isActive ?? true) && maxChannels !== null && usage.channels >= maxChannels) {
+      return planLimitResponse("channels", maxChannels, ws.plan.name);
     }
 
     const existing = await prisma.channel.findUnique({
@@ -133,6 +151,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    await audit("channel.created", { req, actor: access.session, target: `${platform}:${channel.name}`, meta: { tokenSet: Boolean(body.accessToken || body.apiKey) } });
     return NextResponse.json({ channel: serializeChannel(channel) }, { status: 201 });
   } catch (e) {
     console.error("[channels POST]", e);
@@ -144,7 +163,7 @@ export async function PATCH(req: NextRequest) {
   const access = await requireAdmin(req);
   if (!access.ok) return access.response;
 
-  const limited = rateLimit(`channels-patch:${req.headers.get("x-forwarded-for") || "local"}`, 40, 60_000);
+  const limited = rateLimit(`channels-patch:${access.session.email}`, 40, 60_000);
   if (!limited.ok) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -178,9 +197,17 @@ export async function PATCH(req: NextRequest) {
         ...(body.notes !== undefined ? { notes: body.notes?.trim() || null } : {}),
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
         ...(body.clearAccessToken
-          ? { accessToken: null }
+          ? { accessToken: null, refreshToken: null, tokenExpiresAt: null }
           : body.accessToken?.trim()
-            ? { accessToken: encryptSecret(body.accessToken) }
+            ? {
+                accessToken: encryptSecret(body.accessToken),
+                // A manually pasted token replaces any OAuth connection and clears the reconnect flag.
+                refreshToken: null,
+                tokenExpiresAt: null,
+                expiryWarnedAt: null,
+                connectionStatus: "ACTIVE" as const,
+                lastError: null,
+              }
             : {}),
         ...(body.clearApiKey
           ? { apiKey: null }
@@ -190,6 +217,8 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    const tokenChanged = Boolean(body.clearAccessToken || body.clearApiKey || body.accessToken?.trim() || body.apiKey?.trim());
+    await audit(tokenChanged ? "channel.token_changed" : "channel.updated", { req, actor: access.session, target: `${channel.platform}:${channel.name}` });
     return NextResponse.json({ channel: serializeChannel(channel) });
   } catch (e) {
     console.error("[channels PATCH]", e);
@@ -201,7 +230,7 @@ export async function DELETE(req: NextRequest) {
   const access = await requireAdmin(req);
   if (!access.ok) return access.response;
 
-  const limited = rateLimit(`channels-del:${req.headers.get("x-forwarded-for") || "local"}`, 20, 60_000);
+  const limited = rateLimit(`channels-del:${access.session.email}`, 20, 60_000);
   if (!limited.ok) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -212,7 +241,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    await prisma.channel.delete({ where: { id } });
+    const removed = await prisma.channel.delete({ where: { id } });
+    await audit("channel.deleted", { req, actor: access.session, target: `${removed.platform}:${removed.name}` });
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("[channels DELETE]", e);
