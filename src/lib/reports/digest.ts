@@ -55,3 +55,27 @@ export async function sendDueDigest(now = new Date()): Promise<{ sent: boolean; 
   await prisma.workspace.upsert({ where: { id: 1 }, create: { id: 1, lastReportAt: now }, update: { lastReportAt: now } });
   return { sent: true };
 }
+
+/** Email admins once when a prepaid (Safepay) period is within 7 days of ending. */
+export async function sendRenewalReminder(now = new Date()): Promise<{ sent: boolean; reason?: string }> {
+  const row = await prisma.workspace.findUnique({ where: { id: 1 } });
+  if (!row || row.billingProvider !== "SAFEPAY" || !row.currentPeriodEnd || row.plan === "FREE") return { sent: false, reason: "no prepaid plan" };
+  const left = row.currentPeriodEnd.getTime() - now.getTime();
+  if (left <= 0 || left > 7 * DAY) return { sent: false, reason: "not due" };
+  if (row.renewalRemindedAt && now.getTime() - row.renewalRemindedAt.getTime() < 6 * DAY) return { sent: false, reason: "already reminded" };
+
+  const to = await adminEmails();
+  if (!to.length) return { sent: false, reason: "no recipients" };
+  const brand = await getBrandName();
+  const baseUrl = (process.env.APP_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const end = row.currentPeriodEnd.toISOString().slice(0, 10);
+  const result = await sendEmail({
+    to,
+    subject: `${brand}: your ${row.plan.toLowerCase()} plan ends on ${end}`,
+    text: `Your ${row.plan} plan ends on ${end}. Renew before then to keep your features: ${baseUrl}/billing`,
+    html: layout("Your plan is ending soon", `<p>Your <strong>${escapeHtml(row.plan)}</strong> plan ends on <strong>${escapeHtml(end)}</strong>. After that the workspace returns to the Free plan (your data is kept; paid features lock).</p>`, { label: "Renew now", url: `${baseUrl}/billing` }),
+  });
+  if (!result.sent) return { sent: false, reason: result.reason };
+  await prisma.workspace.update({ where: { id: 1 }, data: { renewalRemindedAt: now } });
+  return { sent: true };
+}

@@ -8,43 +8,59 @@ export type WorkspaceState = {
   plan: Plan;
   planId: PlanId;
   status: string;
-  /** "license" = fixed by the operator via LICENSE_PLAN; "stripe" = subscription; "default" = free. */
-  source: "license" | "stripe" | "default";
+  /** "license" = fixed by the operator (LICENSE_PLAN); "safepay" = prepaid period (Pakistan); "lemonsqueezy" = subscription (international); "default" = free. */
+  source: "license" | "safepay" | "lemonsqueezy" | "default";
+  billingProvider: "SAFEPAY" | "LEMONSQUEEZY" | null;
   interval: string | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
-  hasStripeCustomer: boolean;
+  /** Lemon Squeezy customer portal (manage card, cancel, invoices), when subscribed. */
+  portalUrl: string | null;
 };
 
-const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
+/** Lemon Squeezy statuses that keep paid access (a failed renewal keeps access while it is retried). */
+const LS_ACTIVE = new Set(["active", "on_trial", "past_due"]);
 
-/** Plan fixed by the operator (offline licence / managed hosting). Overrides Stripe state. */
+/** Plan fixed by the operator (offline licence / managed hosting). Overrides payment state. */
 export function licensedPlan(): PlanId | null {
   const v = process.env.LICENSE_PLAN?.trim().toUpperCase();
   return isPlanId(v) ? v : null;
 }
 
-export async function getWorkspace(): Promise<WorkspaceState> {
+export async function getWorkspace(now = new Date()): Promise<WorkspaceState> {
   const row = await prisma.workspace.findUnique({ where: { id: 1 } });
+  const free = (over: Partial<WorkspaceState> = {}): WorkspaceState => ({
+    plan: getPlan("FREE"), planId: "FREE", status: "active", source: "default", billingProvider: null,
+    interval: null, currentPeriodEnd: null, cancelAtPeriodEnd: false, portalUrl: null, ...over,
+  });
+
   const licensed = licensedPlan();
-  if (licensed) {
-    return {
-      plan: getPlan(licensed), planId: licensed, status: "active", source: "license", interval: null,
-      currentPeriodEnd: null, cancelAtPeriodEnd: false, hasStripeCustomer: Boolean(row?.stripeCustomerId),
-    };
+  if (licensed) return free({ plan: getPlan(licensed), planId: licensed, source: "license" });
+  if (!row) return free();
+
+  // Safepay is prepaid: the paid plan is valid until currentPeriodEnd, then the workspace falls back to Free.
+  if (row.billingProvider === "SAFEPAY") {
+    const live = row.currentPeriodEnd !== null && row.currentPeriodEnd > now;
+    const effective: PlanId = live ? row.plan : "FREE";
+    return free({
+      plan: getPlan(effective), planId: effective, status: live ? "active" : "expired", source: live ? "safepay" : "default",
+      billingProvider: "SAFEPAY", interval: row.billingInterval, currentPeriodEnd: row.currentPeriodEnd, cancelAtPeriodEnd: true,
+    });
   }
-  // A cancelled / unpaid subscription falls back to Free (data is kept, paid features lock).
-  const effective: PlanId = row && ACTIVE_STATUSES.has(row.planStatus) ? row.plan : "FREE";
-  return {
-    plan: getPlan(effective),
-    planId: effective,
-    status: row?.planStatus ?? "active",
-    source: row && effective !== "FREE" ? "stripe" : "default",
-    interval: row?.billingInterval ?? null,
-    currentPeriodEnd: row?.currentPeriodEnd ?? null,
-    cancelAtPeriodEnd: row?.cancelAtPeriodEnd ?? false,
-    hasStripeCustomer: Boolean(row?.stripeCustomerId),
-  };
+
+  // Lemon Squeezy subscription. A cancelled subscription keeps access until its end date; expired/unpaid/paused fall back to Free
+  // (data is kept, paid features lock).
+  if (row.billingProvider === "LEMONSQUEEZY") {
+    const running = LS_ACTIVE.has(row.planStatus);
+    const grace = row.planStatus === "cancelled" && row.currentPeriodEnd !== null && row.currentPeriodEnd > now;
+    const effective: PlanId = running || grace ? row.plan : "FREE";
+    return free({
+      plan: getPlan(effective), planId: effective, status: row.planStatus, source: effective === "FREE" ? "default" : "lemonsqueezy",
+      billingProvider: "LEMONSQUEEZY", interval: row.billingInterval, currentPeriodEnd: effective === "FREE" ? null : row.currentPeriodEnd,
+      cancelAtPeriodEnd: row.cancelAtPeriodEnd || row.planStatus === "cancelled", portalUrl: row.lsPortalUrl,
+    });
+  }
+  return free({ status: row.planStatus });
 }
 
 export async function getUsage() {

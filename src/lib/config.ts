@@ -31,14 +31,28 @@ const schema = z.object({
   LINKEDIN_CLIENT_ID: optional,
   LINKEDIN_CLIENT_SECRET: optional,
   // Billing (optional; without them the installation runs on the FREE plan)
-  STRIPE_SECRET_KEY: optional,
-  STRIPE_WEBHOOK_SECRET: optional,
-  STRIPE_PRICE_STARTER_MONTHLY: optional,
-  STRIPE_PRICE_STARTER_YEARLY: optional,
-  STRIPE_PRICE_PRO_MONTHLY: optional,
-  STRIPE_PRICE_PRO_YEARLY: optional,
-  STRIPE_PRICE_EXCLUSIVE_MONTHLY: optional,
-  STRIPE_PRICE_EXCLUSIVE_YEARLY: optional,
+  // Lemon Squeezy (international customers)
+  LEMONSQUEEZY_API_KEY: optional,
+  LEMONSQUEEZY_STORE_ID: optional,
+  LEMONSQUEEZY_WEBHOOK_SECRET: optional,
+  LEMONSQUEEZY_TEST_MODE: bool,
+  LEMONSQUEEZY_VARIANT_STARTER_MONTHLY: optional,
+  LEMONSQUEEZY_VARIANT_STARTER_YEARLY: optional,
+  LEMONSQUEEZY_VARIANT_PRO_MONTHLY: optional,
+  LEMONSQUEEZY_VARIANT_PRO_YEARLY: optional,
+  LEMONSQUEEZY_VARIANT_EXCLUSIVE_MONTHLY: optional,
+  LEMONSQUEEZY_VARIANT_EXCLUSIVE_YEARLY: optional,
+  // Visitor-country detection (IP geolocation) and billing-region fallback
+  GEOIP_URL: optional,
+  GEOIP_API_KEY: optional,
+  GEOIP_FORCE_COUNTRY: optional,
+  DEFAULT_BILLING_REGION: z.enum(["PK", "INTL"]).optional(),
+  // Safepay (Pakistan)
+  SAFEPAY_ENVIRONMENT: z.enum(["sandbox", "production"]).optional(),
+  SAFEPAY_API_KEY: optional,
+  SAFEPAY_SECRET_KEY: optional,
+  SAFEPAY_WEBHOOK_SECRET: optional,
+  SAFEPAY_AMOUNT_UNIT: z.enum(["major", "minor"]).optional(),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -68,8 +82,16 @@ export function validateEnv(source: NodeJS.ProcessEnv = process.env) {
     errors.push("DATABASE_URL must be a PostgreSQL connection string (postgresql://user:password@host:5432/database).");
   if (env.RESEND_API_KEY && !env.INVITE_FROM_EMAIL)
     errors.push("INVITE_FROM_EMAIL is required when RESEND_API_KEY is set.");
-  if (env.STRIPE_SECRET_KEY && !env.STRIPE_WEBHOOK_SECRET)
-    errors.push("STRIPE_WEBHOOK_SECRET is required when STRIPE_SECRET_KEY is set.");
+  const safepay = [env.SAFEPAY_API_KEY, env.SAFEPAY_SECRET_KEY, env.SAFEPAY_WEBHOOK_SECRET];
+  if (safepay.some(Boolean) && !safepay.every(Boolean))
+    errors.push("Safepay needs SAFEPAY_API_KEY, SAFEPAY_SECRET_KEY and SAFEPAY_WEBHOOK_SECRET together.");
+  const lemon = [env.LEMONSQUEEZY_API_KEY, env.LEMONSQUEEZY_STORE_ID, env.LEMONSQUEEZY_WEBHOOK_SECRET];
+  if (lemon.some(Boolean) && !lemon.every(Boolean))
+    errors.push("Lemon Squeezy needs LEMONSQUEEZY_API_KEY, LEMONSQUEEZY_STORE_ID and LEMONSQUEEZY_WEBHOOK_SECRET together.");
+  if (env.GEOIP_URL && !env.GEOIP_URL.includes("{ip}"))
+    errors.push("GEOIP_URL must contain the {ip} placeholder.");
+  if (env.NODE_ENV === "production" && env.GEOIP_FORCE_COUNTRY)
+    errors.push("GEOIP_FORCE_COUNTRY is for testing only and must not be set in production.");
   return errors.length
     ? { ok: false as const, errors, env }
     : { ok: true as const, errors, env };
@@ -88,6 +110,9 @@ export function getEnv(): Env {
 /** Fails fast with a readable message; called from instrumentation on server start. */
 export function assertEnv() {
   const result = validateEnv();
+  if (result.env?.NODE_ENV === "production" && result.env.SAFEPAY_API_KEY && result.env.SAFEPAY_ENVIRONMENT !== "production") {
+    console.warn("[config] Safepay is in SANDBOX mode: set SAFEPAY_ENVIRONMENT=production to take real payments.");
+  }
   if (!result.ok) {
     const message = `Configuration error:\n - ${result.errors.join("\n - ")}`;
     throw new Error(message);

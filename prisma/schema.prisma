@@ -352,8 +352,12 @@ model Workspace {
   id                   Int       @id @default(1)
   plan                 Plan      @default(FREE)
   planStatus           String    @default("active") // active | trialing | past_due | canceled
-  stripeCustomerId     String?   @unique
-  stripeSubscriptionId String?   @unique
+  /// Lemon Squeezy (international customers): customer / subscription ids and the hosted customer-portal URL.
+  lsCustomerId         String?   @unique
+  lsSubscriptionId     String?   @unique
+  lsPortalUrl          String?
+  /// updated_at of the last applied Lemon Squeezy event (older, out-of-order events are ignored).
+  lsUpdatedAt          DateTime?
   billingInterval      String?   // month | year
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
@@ -364,7 +368,37 @@ model Workspace {
   /// Comma separated extra recipients; admins always receive it.
   reportRecipients     String?
   lastReportAt         DateTime?
+  /// Which gateway owns the current paid period: SAFEPAY (Pakistan, prepaid, ends at currentPeriodEnd) or LEMONSQUEEZY (international subscription).
+  billingProvider      String?
+  /// Last time a "your plan expires soon" email was sent for the current period.
+  renewalRemindedAt    DateTime?
   updatedAt            DateTime  @updatedAt
+}
+
+/// One row per Safepay checkout attempt. A PAID row extends the workspace's paid period exactly once.
+model Payment {
+  id          String    @id @default(cuid())
+  /// Our order id sent to Safepay (also shown to the customer as the invoice number).
+  orderId     String    @unique
+  provider    String    @default("SAFEPAY")
+  plan        Plan
+  /// month | year
+  interval    String
+  /// Amount charged in whole rupees (after any upgrade credit).
+  amountPkr   Int
+  creditPkr   Int       @default(0)
+  currency    String    @default("PKR")
+  /// Safepay tracker token (track_…); identifies the payment in webhooks and redirects.
+  tracker     String?   @unique
+  /// PENDING | PAID | CANCELLED | FAILED
+  status      String    @default("PENDING")
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  paidAt      DateTime?
+  /// Safepay payment reference, when provided.
+  reference   String?
+
+  @@index([status, createdAt])
 }
 
 /// Read-only REST API keys (Exclusive plan). Only a hash of the key is stored.
@@ -378,13 +412,6 @@ model ApiKey {
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
   revokedAt  DateTime?
-}
-
-/// Processed Stripe webhook events (idempotency).
-model StripeEvent {
-  id          String   @id
-  type        String
-  processedAt DateTime @default(now())
 }
 
 enum Plan {

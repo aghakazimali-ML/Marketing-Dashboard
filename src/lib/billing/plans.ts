@@ -1,8 +1,9 @@
 /**
  * Plan catalogue: the single source of truth for what each tier includes.
  * Pure data + helpers, safe to import from client and server code.
- * Displayed prices are marketing copy; what customers are actually charged is set by the
- * Stripe Price IDs configured in the environment.
+ * Pakistan pays in rupees (PKR) through Safepay, which charges exactly the price computed from this
+ * table on the server. Everyone else pays in US dollars (USD) through Lemon Squeezy, which charges the
+ * price configured on its variants (keep them equal to the USD figures here).
  */
 export type PlanId = "FREE" | "STARTER" | "PRO" | "EXCLUSIVE";
 export const PLAN_ORDER: PlanId[] = ["FREE", "STARTER", "PRO", "EXCLUSIVE"];
@@ -38,9 +39,12 @@ export type Plan = {
   id: PlanId;
   name: string;
   tagline: string;
-  /** Marketing price in USD per month / per year (billed yearly). */
-  priceMonthly: number;
-  priceYearly: number;
+  /** Price in Pakistani rupees (whole PKR): per month, and per year when paid yearly (2 months free). */
+  pricePkrMonthly: number;
+  pricePkrYearly: number;
+  /** Price in US dollars for international customers (Lemon Squeezy variants must be set to the same amounts). */
+  priceUsdMonthly: number;
+  priceUsdYearly: number;
   limits: Limits;
   features: Record<FeatureKey, boolean>;
   highlights: string[];
@@ -57,8 +61,10 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "FREE",
     name: "Free",
     tagline: "Try it with your main channels",
-    priceMonthly: 0,
-    priceYearly: 0,
+    pricePkrMonthly: 0,
+    pricePkrYearly: 0,
+    priceUsdMonthly: 0,
+    priceUsdYearly: 0,
     limits: { channels: 3, seats: 1, historyDays: 30, aiInsightsPerDay: 0, apiKeys: 0 },
     features: { ...none },
     highlights: [
@@ -74,8 +80,10 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "STARTER",
     name: "Starter",
     tagline: "For small teams that report every month",
-    priceMonthly: 19,
-    priceYearly: 190,
+    pricePkrMonthly: 4999,
+    pricePkrYearly: 49990,
+    priceUsdMonthly: 19,
+    priceUsdYearly: 190,
     limits: { channels: 8, seats: 3, historyDays: 90, aiInsightsPerDay: 0, apiKeys: 0 },
     features: {
       ...none,
@@ -97,8 +105,10 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "PRO",
     name: "Pro",
     tagline: "For agencies and growing marketing teams",
-    priceMonthly: 49,
-    priceYearly: 490,
+    pricePkrMonthly: 12999,
+    pricePkrYearly: 129990,
+    priceUsdMonthly: 49,
+    priceUsdYearly: 490,
     limits: { channels: 25, seats: 10, historyDays: 365, aiInsightsPerDay: 30, apiKeys: 0 },
     features: {
       ...none,
@@ -120,8 +130,10 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "EXCLUSIVE",
     name: "Exclusive",
     tagline: "Everything, with no limits",
-    priceMonthly: 149,
-    priceYearly: 1490,
+    pricePkrMonthly: 39999,
+    pricePkrYearly: 399990,
+    priceUsdMonthly: 149,
+    priceUsdYearly: 1490,
     limits: { channels: null, seats: null, historyDays: null, aiInsightsPerDay: null, apiKeys: 5 },
     features: {
       scheduledFetch: true, excelPdfExport: true, periodComparison: true, customRange: true,
@@ -173,3 +185,29 @@ export function planRank(id: PlanId) {
 
 /** Free-tier date presets (custom ranges and long windows are paid features). */
 export const FREE_PRESETS = ["last_7", "last_30"];
+
+export type BillingInterval = "month" | "year";
+
+export function pricePkr(plan: PlanId, interval: BillingInterval): number {
+  const p = PLANS[plan];
+  return interval === "year" ? p.pricePkrYearly : p.pricePkrMonthly;
+}
+
+/** "Rs 4,999" */
+export function formatPkr(amount: number): string {
+  return amount === 0 ? "Free" : `Rs ${new Intl.NumberFormat("en-PK").format(amount)}`;
+}
+
+export type Currency = "PKR" | "USD";
+
+/** List price of a plan period in the given currency (whole units). */
+export function planPrice(plan: PlanId, interval: BillingInterval, currency: Currency): number {
+  const p = PLANS[plan];
+  if (currency === "USD") return interval === "year" ? p.priceUsdYearly : p.priceUsdMonthly;
+  return interval === "year" ? p.pricePkrYearly : p.pricePkrMonthly;
+}
+
+export function formatMoney(amount: number, currency: Currency): string {
+  if (amount === 0) return "Free";
+  return currency === "USD" ? `$${new Intl.NumberFormat("en-US").format(amount)}` : formatPkr(amount);
+}
