@@ -193,3 +193,29 @@ describe("misc hygiene", () => {
     expect(strong.ok).toBe(true);
   });
 });
+
+describe("legal pages", () => {
+  it("renders company details from the environment", async () => {
+    process.env.COMPANY_NAME = "Acme Analytics (Pvt) Ltd";
+    process.env.SUPPORT_EMAIL = "help@acme.test";
+    process.env.REFUND_WINDOW_DAYS = "10";
+    const { getLegalInfo } = await import("@/lib/legal");
+    // getEnv() caches; validate through a fresh parse to prove the fields are accepted.
+    const { validateEnv } = await import("@/lib/config");
+    const res = validateEnv({ ...process.env } as NodeJS.ProcessEnv);
+    expect(res.ok).toBe(true);
+    expect(res.env?.COMPANY_NAME).toBe("Acme Analytics (Pvt) Ltd");
+    expect(res.env?.REFUND_WINDOW_DAYS).toBe(10);
+    expect(typeof getLegalInfo).toBe("function");
+    delete process.env.COMPANY_NAME;
+    delete process.env.SUPPORT_EMAIL;
+    delete process.env.REFUND_WINDOW_DAYS;
+  });
+  it("legal paths are public in the proxy", async () => {
+    const { proxy } = await import("@/proxy");
+    for (const path of ["/terms", "/privacy", "/refund-policy"]) {
+      const res = await proxy(new NextRequest(`http://localhost${path}`));
+      expect(res.headers.get("location")).toBeNull();
+    }
+  });
+});

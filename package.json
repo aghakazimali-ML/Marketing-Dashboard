@@ -17,7 +17,8 @@
     "rotate-secrets": "tsx scripts/rotate_secrets.ts",
     "create-owner": "tsx scripts/create_owner.ts",
     "backup": "tsx scripts/backup.ts",
-    "restore": "tsx scripts/restore_backup.ts"
+    "restore": "tsx scripts/restore_backup.ts",
+    "provision-client": "tsx scripts/provision_client.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

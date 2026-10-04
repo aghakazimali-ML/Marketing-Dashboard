@@ -19,7 +19,7 @@ services:
     build: .
     image: marketing-dashboard:latest
     restart: unless-stopped
-    env_file: .env            # copy .env.example to .env and fill it in
+    env_file: ${CLIENT_ENV_FILE:-.env}   # default: .env next to this file. provision-client sets CLIENT_ENV_FILE per customer
     environment:
       DATABASE_URL: postgresql://dashboard:${POSTGRES_PASSWORD}@postgres:5432/dashboard
       TRUST_PROXY: "true"     # the app sits behind your reverse proxy (TLS terminates there)
@@ -27,9 +27,9 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3000:3000" # expose only to the reverse proxy on this host
+      - "127.0.0.1:${APP_PORT:-3000}:3000" # expose only to the reverse proxy on this host (APP_PORT differs per customer)
     volumes:
-      - ./backups:/backups
+      - ${BACKUP_DIR:-./backups}:/backups
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
       interval: 30s
@@ -43,7 +43,7 @@ services:
   scheduler:
     image: curlimages/curl:8.10.1
     restart: unless-stopped
-    env_file: .env
+    env_file: ${CLIENT_ENV_FILE:-.env}
     depends_on:
       dashboard:
         condition: service_healthy

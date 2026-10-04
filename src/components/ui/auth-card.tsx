@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { BarChart3 } from "lucide-react";
+import { LegalLinks } from "@/components/legal/legal-links";
 import { useBrand } from "@/components/providers/entitlements-provider";
 
 export function AuthCard({ title, subtitle, children }: { title?: string; subtitle?: string; children: React.ReactNode }) {
@@ -15,6 +16,7 @@ export function AuthCard({ title, subtitle, children }: { title?: string; subtit
         <h1 className="text-center font-display text-2xl text-navy-900">{title ?? brand}</h1>
         {subtitle ? <p className="mt-1 text-center text-sm text-muted">{subtitle}</p> : null}
         {children}
+        <LegalLinks className="mt-6" />
       </main>
     </div>
   );
