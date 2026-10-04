@@ -19,6 +19,40 @@ A self-hostable SaaS-style analytics product for marketing teams, **built for th
 
 Limits, features and prices live in `src/lib/billing/plans.ts` (the single catalogue; edit the PKR and USD prices there) and are enforced on the server. Customers pay through Safepay (Pakistan) or Lemon Squeezy (everywhere else); the operator can instead fix a plan with `LICENSE_PLAN`.
 
+## Selling this product: one installation per customer
+
+Each customer gets **their own copy** of the app and **their own PostgreSQL database** (their own folder, port and secrets). Customers never share data, and a problem at one customer cannot affect another. You, the operator, run the copies on your server(s).
+
+Set up a new customer in a few minutes:
+
+```bash
+npm run provision-client -- --name "Acme Ltd" --domain dash.acme.com --support-email help@yourcompany.com
+# creates clients/acme-ltd/.env with fresh random secrets, then prints the exact next steps:
+docker compose --env-file clients/acme-ltd/.env -p acme-ltd up -d --build
+```
+
+- Put settings shared by every customer (your Safepay and Lemon Squeezy keys, Google/Meta/LinkedIn OAuth apps, Resend key, `COMPANY_NAME`, `COMPANY_ADDRESS`) in `clients/_shared.env`; they are copied into each new customer's `.env`.
+- Add `--plan EXCLUSIVE` (or STARTER/PRO) to fix a customer's plan yourself, for example for an invoiced customer. Leave it out to let them buy a plan at checkout.
+- Point the customer's domain at your server and add an HTTPS reverse-proxy rule to the port the script prints. Then give the owner the setup token so they can create their account at `/signup`.
+- `clients/` is git-ignored because it contains secrets. Back up each `.env` (a lost `SECRETS_ENCRYPTION_KEY` cannot be recovered) and each customer's database (`npm run backup`).
+
+## Legal pages
+
+`/terms`, `/privacy` and `/refund-policy` are public pages, linked from the sign-in screens and the billing page. They fill in your business details from `COMPANY_NAME`, `COMPANY_ADDRESS`, `COMPANY_COUNTRY` (default Pakistan, also used as the governing law), `SUPPORT_EMAIL`, `LEGAL_EFFECTIVE_DATE` and `REFUND_WINDOW_DAYS` (default 7). The text is a sensible starting template that matches how this product works (Safepay and Lemon Squeezy, encrypted credentials, AI providers). **Have a lawyer review it for your company and jurisdiction before selling.**
+
+## Go-live checklist
+
+- [ ] `COMPANY_NAME`, `SUPPORT_EMAIL` and the legal text reviewed by a lawyer; placeholder `LICENSE` replaced
+- [ ] Google, Meta and LinkedIn apps created and approved (Meta and LinkedIn need app review; apply early)
+- [ ] Safepay sandbox tested end to end, `SAFEPAY_AMOUNT_UNIT` confirmed, then `SAFEPAY_ENVIRONMENT=production`
+- [ ] Lemon Squeezy store, six variants ($7/$19/$35 monthly and $70/$190/$350 yearly) and webhook set up and tested in test mode
+- [ ] Resend domain verified (invitations, password resets, scheduled reports)
+- [ ] HTTPS domain, reverse proxy and firewall; `TRUST_PROXY=true`
+- [ ] Docker image built and started; `/api/health` returns OK
+- [ ] Daily backup scheduled and a restore tested
+- [ ] Uptime monitoring on `/api/health`
+- [ ] One real pilot customer connected and fetched successfully
+
 ## Quick start (development)
 
 ```bash

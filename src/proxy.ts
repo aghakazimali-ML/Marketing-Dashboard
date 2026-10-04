@@ -13,6 +13,9 @@ const PUBLIC_PATHS = [
   "/api/auth/reset",
   "/forgot-password",
   "/reset-password",
+  "/terms",
+  "/privacy",
+  "/refund-policy",
   "/api/health",
   // Authenticated by their own secret / signature, not the session cookie:
   "/api/cron/sync",

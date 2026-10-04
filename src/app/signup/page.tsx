@@ -235,6 +235,11 @@ function SignupForm() {
               >
                 {loading ? "Creating account…" : "Create account"}
               </button>
+              <p className="mt-3 text-center text-xs text-muted">
+                By creating an account you agree to the{" "}
+                <Link href="/terms" className="font-medium text-teal-700 hover:underline">Terms of Service</Link> and{" "}
+                <Link href="/privacy" className="font-medium text-teal-700 hover:underline">Privacy Policy</Link>.
+              </p>
             </form>
             <p className="mt-5 text-center text-sm text-muted">
               Already set up?{" "}

@@ -53,6 +53,13 @@ const schema = z.object({
   SAFEPAY_SECRET_KEY: optional,
   SAFEPAY_WEBHOOK_SECRET: optional,
   SAFEPAY_AMOUNT_UNIT: z.enum(["major", "minor"]).optional(),
+  // Legal entity shown on the Terms, Privacy and Refund pages
+  COMPANY_NAME: optional,
+  COMPANY_ADDRESS: optional,
+  COMPANY_COUNTRY: optional,
+  SUPPORT_EMAIL: optional,
+  LEGAL_EFFECTIVE_DATE: optional, // e.g. 2026-10-04
+  REFUND_WINDOW_DAYS: z.coerce.number().int().min(0).max(90).default(7),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -112,6 +119,9 @@ export function assertEnv() {
   const result = validateEnv();
   if (result.env?.NODE_ENV === "production" && result.env.SAFEPAY_API_KEY && result.env.SAFEPAY_ENVIRONMENT !== "production") {
     console.warn("[config] Safepay is in SANDBOX mode: set SAFEPAY_ENVIRONMENT=production to take real payments.");
+  }
+  if (result.env?.NODE_ENV === "production" && (!result.env.COMPANY_NAME || !result.env.SUPPORT_EMAIL)) {
+    console.warn("[config] COMPANY_NAME and SUPPORT_EMAIL are not set: the Terms, Privacy and Refund pages will show placeholders.");
   }
   if (!result.ok) {
     const message = `Configuration error:\n - ${result.errors.join("\n - ")}`;

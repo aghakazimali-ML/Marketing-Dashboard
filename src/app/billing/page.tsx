@@ -13,6 +13,7 @@ import { useEntitlements } from "@/components/providers/entitlements-provider";
 import { useToast } from "@/components/providers/toast-provider";
 import { apiRequest } from "@/lib/client/api";
 import { FEATURE_LABELS, PLANS, PLAN_ORDER, formatMoney, formatPkr, planPrice, planRank, type FeatureKey, type PlanId } from "@/lib/billing/plans";
+import { LegalLinks } from "@/components/legal/legal-links";
 import { WorkspaceSettings } from "@/components/billing/workspace-settings";
 
 export default function BillingPage() {
@@ -224,6 +225,7 @@ function BillingContent() {
 
       {isAdmin && b.provider === "SAFEPAY" ? <PaymentHistory /> : null}
       {isAdmin ? <WorkspaceSettings /> : null}
+      <LegalLinks className="mt-8" />
     </div>
   );
 }
