@@ -85,7 +85,7 @@ export function AuditLog() {
         </div>
       )}
       {cursor ? (
-        <button type="button" disabled={loading} onClick={() => void load(cursor)} className="mt-3 rounded-md border border-line px-3 py-1.5 text-xs font-medium hover:bg-sand-100 disabled:opacity-50">
+        <button type="button" disabled={loading} onClick={() => void load(cursor)} className="mt-3 rounded-full border border-line px-3 py-1.5 text-xs font-medium hover:bg-sand-100 disabled:opacity-50">
           {loading ? "Loading…" : "Load more"}
         </button>
       ) : null}

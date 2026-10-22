@@ -176,7 +176,7 @@ export function PagesManager() {
     }
   }
 
-  const input = "w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink";
+  const input = "w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink";
   const limit = ent?.plan.limits.channels ?? null;
 
   return (
@@ -250,7 +250,7 @@ export function PagesManager() {
         </div>
 
         {error ? <p role="alert" className="text-sm text-down">{error}</p> : null}
-        <button type="submit" disabled={saving} className="rounded-md bg-navy-900 px-5 py-2.5 text-sm font-semibold text-on-accent hover:opacity-90 disabled:opacity-50">
+        <button type="submit" disabled={saving} className="rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-on-accent hover:opacity-90 disabled:opacity-50">
           {saving ? "Saving…" : editingId ? "Save changes" : `Add ${meta.label} page`}
         </button>
       </form>
@@ -308,7 +308,7 @@ export function PagesManager() {
                       {platformMeta && canOauth ? (
                         <a
                           href={`/api/oauth/${platformMeta.provider}/start?channelId=${encodeURIComponent(ch.id)}`}
-                          className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs font-medium hover:bg-sand-100"
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium hover:bg-sand-100"
                         >
                           <Plug size={12} aria-hidden="true" /> {state === "NEEDS_RECONNECT" || ch.oauthConnected ? "Reconnect" : "Connect"} with {platformMeta.provider === "google" ? "Google" : platformMeta.provider === "meta" ? "Meta" : "LinkedIn"}
                         </a>
@@ -352,7 +352,7 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button type="button" aria-pressed={active} onClick={onClick} className={clsx("rounded-md px-3 py-1.5 text-xs font-medium", active ? "bg-navy-900 text-on-accent" : "border border-line bg-card text-navy-900 hover:bg-sand-100")}>
+    <button type="button" aria-pressed={active} onClick={onClick} className={clsx("rounded-full px-3 py-1.5 text-xs font-medium", active ? "bg-navy-900 text-on-accent" : "border border-line bg-card text-navy-900 hover:bg-sand-100")}>
       {label}
     </button>
   );

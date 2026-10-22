@@ -162,7 +162,7 @@ export function TeamManager() {
               maxLength={254}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
+              className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink"
               autoComplete="email"
             />
           </label>
@@ -171,7 +171,7 @@ export function TeamManager() {
             <select
               value={role}
               onChange={(event) => setRole(event.target.value as "ADMIN" | "ANALYST")}
-              className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
+              className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink"
             >
               <option value="ANALYST">Analyst</option>
               <option value="ADMIN">Administrator</option>
@@ -180,7 +180,7 @@ export function TeamManager() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50"
+            className="rounded-full bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50"
           >
             {saving ? "Creating…" : "Create invite"}
           </button>
@@ -194,7 +194,7 @@ export function TeamManager() {
           {showEmailPreview ? "Hide email preview" : "Preview invitation email"}
         </button>
         {showEmailPreview ? (
-          <div className="mt-3 max-w-2xl rounded-md border border-line bg-sand-50 p-4 text-sm">
+          <div className="mt-3 max-w-2xl rounded-2xl border border-line bg-sand-50 p-4 text-sm">
             <dl className="grid gap-2 sm:grid-cols-[5rem_1fr]">
               <dt className="text-xs font-semibold text-muted uppercase">To</dt>
               <dd>{email || "new teammate@example.com"}</dd>
@@ -208,7 +208,7 @@ export function TeamManager() {
               <p className="mt-2">
                 You have been invited as an {role === "ADMIN" ? "administrator" : "analyst"}.
               </p>
-              <p className="mt-3 inline-block rounded-md bg-teal-600 px-4 py-2 font-semibold text-white">
+              <p className="mt-3 inline-block rounded-full bg-teal-600 px-4 py-2 font-semibold text-white">
                 Accept invitation
               </p>
               <p className="mt-3 text-xs">This one-time link expires in seven days.</p>
@@ -223,14 +223,14 @@ export function TeamManager() {
                 aria-label="New invitation link"
                 readOnly
                 value={inviteUrl}
-                className="w-full rounded-md border border-line bg-sand-50 px-3 py-2 text-xs"
+                className="w-full rounded-xl border border-line bg-sand-50 px-3 py-2 text-xs"
               />
             </div>
             <button
               type="button"
               onClick={copyInvite}
               title="Copy invitation link"
-              className="inline-flex items-center justify-center gap-2 self-end rounded-md border border-line px-3 py-2 text-sm hover:bg-sand-100"
+              className="inline-flex items-center justify-center gap-2 self-end rounded-full border border-line px-3 py-2 text-sm hover:bg-sand-100"
             >
               <Copy size={15} aria-hidden="true" />
               {copied ? "Copied" : "Copy link"}
@@ -286,7 +286,7 @@ export function TeamManager() {
                           type="button"
                           onClick={() => void updateMember(member, { isActive: !member.isActive })}
                           title={member.isActive ? "Disable account" : "Enable account"}
-                          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-navy-700 hover:bg-sand-100"
+                          className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium text-navy-700 hover:bg-sand-100"
                         >
                           {member.isActive ? <UserRoundX size={15} /> : <UserRoundCheck size={15} />}
                           {member.isActive ? "Disable" : "Enable"}
@@ -318,7 +318,7 @@ export function TeamManager() {
                   type="button"
                   onClick={() => void revokeInvite(invite)}
                   title={`Revoke invitation for ${invite.email}`}
-                  className="inline-flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs font-medium text-down hover:bg-down/5 sm:self-auto"
+                  className="inline-flex items-center gap-1.5 self-start rounded-full px-2 py-1 text-xs font-medium text-down hover:bg-down/5 sm:self-auto"
                 >
                   <X size={14} aria-hidden="true" />
                   Revoke
