@@ -302,6 +302,13 @@ h3,
 .card-featured .text-down {
   color: rgba(255, 255, 255, 0.78);
 }
+.card-featured .text-navy-900 {
+  color: #ffffff;
+}
+.card-featured .text-up,
+.card-featured .text-teal-600 {
+  color: var(--electric);
+}
 .card-featured > * {
   position: relative;
   z-index: 1;

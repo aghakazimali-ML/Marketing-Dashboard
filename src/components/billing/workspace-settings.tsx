@@ -88,8 +88,8 @@ export function WorkspaceSettings() {
     await load();
   }
 
-  const input = "rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink";
-  const btn = "rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-on-accent hover:bg-teal-500";
+  const input = "rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink";
+  const btn = "rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-on-accent hover:bg-teal-500";
 
   return (
     <div id="settings" className="space-y-6">

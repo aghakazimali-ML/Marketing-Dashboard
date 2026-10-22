@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Check, X } from "lucide-react";
@@ -76,29 +76,32 @@ function BillingContent() {
 
   return (
     <div className="space-y-6">
-      <SectionCard title={`You are on the ${data.plan.name} plan`} subtitle={data.plan.tagline}>
-        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+      <section className="crazy-card card-featured rise p-6 sm:p-8">
+        <p className="text-sm font-medium text-white/80">Current plan</p>
+        <h2 className="mt-1 text-4xl text-white">{data.plan.name}</h2>
+        <p className="mt-1 text-sm text-white/80">{data.plan.tagline}</p>
+        <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <Stat label="Channels" value={`${data.usage.channels} / ${limitText(data.plan.limits.channels)}`} />
           <Stat label="Users" value={`${data.usage.seats} / ${limitText(data.plan.limits.seats)}`} />
           <Stat label="History" value={data.plan.limits.historyDays === null ? "Unlimited" : `${data.plan.limits.historyDays} days`} />
           <Stat label="Status" value={managedByLicense ? "Licensed by operator" : data.status.replace("_", " ")} />
         </dl>
         {data.currentPeriodEnd ? (
-          <p className="mt-3 text-xs text-muted">
+          <p className="mt-4 text-xs text-white/80">
             {data.cancelAtPeriodEnd ? "Ends on" : "Renews on"} {format(new Date(data.currentPeriodEnd), "MMM d, yyyy")}
             {data.status === "past_due" ? " — payment failed, please update your card." : ""}
           </p>
         ) : null}
         {isAdmin && data.hasSubscription && !managedByLicense ? (
-          <button type="button" disabled={busy === "portal"} onClick={() => void go("/api/billing/lemonsqueezy/portal", {}, "portal")} className="mt-4 rounded-md border border-line bg-card px-4 py-2 text-sm font-medium hover:bg-sand-100 disabled:opacity-50">
+          <button type="button" disabled={busy === "portal"} onClick={() => void go("/api/billing/lemonsqueezy/portal", {}, "portal")} className="mt-5 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#0e2a1d] hover:bg-white/90 disabled:opacity-50">
             {busy === "portal" ? "Opening…" : "Manage subscription & invoices"}
           </button>
         ) : null}
-      </SectionCard>
+      </section>
 
       {error ? <ErrorState message={error} /> : null}
       {sp?.environment === "sandbox" || ls?.testMode ? (
-        <p role="status" className="rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
+        <p role="status" className="rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
           {sp ? "Safepay" : "Lemon Squeezy"} is in <strong>{sp ? "sandbox" : "test"}</strong> mode: test payments only, no real money is charged.
         </p>
       ) : null}
@@ -107,14 +110,14 @@ function BillingContent() {
         {countryName ? ` for ${countryName}` : ""}, based on your location. {b.provider === "SAFEPAY" ? "Pay with Safepay." : "Pay securely with Lemon Squeezy (taxes handled for you)."}
       </p>
       {!b.configured && !managedByLicense ? (
-        <p role="status" className="rounded-md border border-line bg-sand-50 px-3 py-2 text-sm text-muted">
+        <p role="status" className="rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-muted">
           Online payments are not configured on this installation, so upgrades are handled by the operator. Contact them to change your plan.
         </p>
       ) : null}
 
-      <div className="flex items-center justify-center gap-2" role="group" aria-label="Billing interval">
+      <div className="mx-auto flex w-fit items-center gap-1 rounded-full border border-line bg-surface p-1" role="group" aria-label="Billing interval">
         {(["month", "year"] as const).map((i) => (
-          <button key={i} type="button" aria-pressed={interval === i} onClick={() => setInterval_(i)} className={clsx("rounded-md px-4 py-2 text-sm font-medium", interval === i ? "bg-navy-900 text-on-accent" : "border border-line bg-card hover:bg-sand-100")}>
+          <button key={i} type="button" aria-pressed={interval === i} onClick={() => setInterval_(i)} className={clsx("rounded-full px-5 py-2 text-sm font-medium transition-colors", interval === i ? "bg-[var(--nav-active-bg)] text-white" : "text-muted hover:bg-[var(--nav-hover)]")}>
             {i === "month" ? "Monthly" : "Yearly (2 months free)"}
           </button>
         ))}
@@ -128,15 +131,24 @@ function BillingContent() {
           const upgrade = planRank(id) > planRank(current as PlanId);
           const safepayQuote = sp?.quotes?.[id as "STARTER" | "PRO" | "EXCLUSIVE"]?.[interval];
           const lsAvailable = ls?.available?.[id as "STARTER" | "PRO" | "EXCLUSIVE"]?.[interval];
+          const featured = id === "PRO";
+          const buyBtn = clsx(
+            "w-full rounded-full px-4 py-3 text-sm font-semibold disabled:opacity-50",
+            featured ? "bg-white text-[#0e2a1d] hover:bg-white/90" : "bg-teal-600 text-on-accent hover:bg-teal-500"
+          );
+          const ghostBtn = clsx(
+            "mt-5 w-full rounded-full border px-4 py-3 text-sm font-medium disabled:opacity-50",
+            featured ? "border-white/40 text-white hover:bg-white/10" : "border-line bg-card hover:bg-sand-100"
+          );
           return (
-            <div key={id} className={clsx("crazy-card flex flex-col rounded-xl p-5", isCurrent && "ring-2 ring-teal-500", id === "PRO" && "border-teal-500/50")}>
+            <div key={id} className={clsx("crazy-card rise flex flex-col p-6", featured && "card-featured", isCurrent && "ring-2 ring-teal-500")} style={{ "--i": PLAN_ORDER.indexOf(id) } as CSSProperties}>
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-xl text-navy-900">{p.name}</h2>
-                {isCurrent ? <span className="rounded bg-teal-500/15 px-2 py-0.5 text-[11px] font-semibold text-teal-600">Current</span> : id === "PRO" ? <span className="rounded bg-lime/30 px-2 py-0.5 text-[11px] font-semibold text-navy-900">Popular</span> : null}
+                <h2 className="text-xl text-navy-900">{p.name}</h2>
+                {isCurrent ? <span className={clsx("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", featured ? "bg-white/20 text-white" : "bg-accent-tint text-teal-600")}>Current</span> : featured ? <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold text-white">Popular</span> : null}
               </div>
               {currency === "PKR" && p.pkrRegularMonthly ? <p className="mt-1 text-[11px] font-semibold text-teal-600">🇵🇰 Special offer for Pakistan</p> : null}
               <p className="mt-1 text-xs text-muted">{p.tagline}</p>
-              <p className="mt-4 font-display text-3xl text-navy-900">
+              <p className="mt-4 text-4xl font-semibold tracking-tight text-navy-900">
                 {currency === "PKR" && p.pkrRegularMonthly ? <span className="block text-sm font-normal text-muted line-through">{formatMoney(p.pkrRegularMonthly, currency)}</span> : null}
                 {formatMoney(price, currency)}
                 {price > 0 ? <span className="text-sm font-normal text-muted"> /month{interval === "year" ? ", billed yearly" : ""}</span> : null}
@@ -150,7 +162,7 @@ function BillingContent() {
                 isAdmin && safepayQuote ? (
                   safepayQuote.ok ? (
                     <div className="mt-5 space-y-1.5">
-                      <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/safepay/checkout", { plan: id, interval }, `buy-${id}`)} className="w-full rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50">
+                      <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/safepay/checkout", { plan: id, interval }, `buy-${id}`)} className={buyBtn}>
                         {busy === `buy-${id}` ? "Redirecting to Safepay…" : `${safepayQuote.kind === "renewal" ? "Renew" : safepayQuote.kind === "upgrade" ? "Upgrade" : "Buy"} · ${formatPkr(safepayQuote.amountPkr)} with Safepay`}
                       </button>
                       <p className="text-center text-[11px] text-muted">
@@ -164,7 +176,7 @@ function BillingContent() {
                 ) : isAdmin && ls && !data.hasSubscription && upgrade ? (
                   lsAvailable ? (
                     <div className="mt-5 space-y-1.5">
-                      <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/lemonsqueezy/checkout", { plan: id, interval }, `buy-${id}`)} className="w-full rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50">
+                      <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/lemonsqueezy/checkout", { plan: id, interval }, `buy-${id}`)} className={buyBtn}>
                         {busy === `buy-${id}` ? "Redirecting…" : `Subscribe · ${formatMoney(planPrice(id, interval, "USD"), "USD")}/${interval === "year" ? "year" : "month"}`}
                       </button>
                       <p className="text-center text-[11px] text-muted">Renews automatically. Cancel any time from Manage subscription.</p>
@@ -173,7 +185,7 @@ function BillingContent() {
                     <p className="mt-5 text-center text-xs text-muted">This plan is not available for purchase yet.</p>
                   )
                 ) : isAdmin && ls && data.hasSubscription && !isCurrent ? (
-                  <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/lemonsqueezy/portal", {}, "portal")} className="mt-5 rounded-md border border-line bg-card px-4 py-2.5 text-sm font-medium hover:bg-sand-100 disabled:opacity-50">
+                  <button type="button" disabled={busy !== null} onClick={() => void go("/api/billing/lemonsqueezy/portal", {}, "portal")} className={ghostBtn}>
                     Change plan in Manage subscription
                   </button>
                 ) : (
@@ -265,7 +277,7 @@ function PaymentHistory() {
                   <td className="px-3 py-2 capitalize">{p.plan.toLowerCase()} · {p.interval === "year" ? "yearly" : "monthly"}</td>
                   <td className="px-3 py-2 tabular-nums">{formatPkr(p.amountPkr)}</td>
                   <td className="px-3 py-2">
-                    <span className={clsx("rounded px-2 py-0.5 text-[11px] font-semibold", p.status === "PAID" ? "bg-up/10 text-up" : p.status === "PENDING" ? "bg-sand-100 text-muted" : "bg-down/10 text-down")}>{p.status}</span>
+                    <span className={clsx("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", p.status === "PAID" ? "bg-up/10 text-up" : p.status === "PENDING" ? "bg-sand-100 text-muted" : "bg-down/10 text-down")}>{p.status}</span>
                   </td>
                 </tr>
               ))}
@@ -279,9 +291,9 @@ function PaymentHistory() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-line bg-sand-50 px-3 py-2">
-      <dt className="text-[11px] font-semibold tracking-wide text-muted uppercase">{label}</dt>
-      <dd className="mt-0.5 font-medium capitalize text-navy-900">{value}</dd>
+    <div className="rounded-2xl bg-white/12 px-4 py-3">
+      <dt className="text-xs font-medium text-white/75">{label}</dt>
+      <dd className="mt-0.5 text-lg font-semibold capitalize text-white">{value}</dd>
     </div>
   );
 }
