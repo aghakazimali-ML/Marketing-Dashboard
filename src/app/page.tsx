@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { format } from "date-fns";
 import { AppShell } from "@/components/layout/app-shell";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -74,9 +74,11 @@ function OverviewContent() {
   const connectedSocial = data.byPlatform.some((p) => p.connected);
   const noData = (key: keyof OverviewData["totals"]) => (key.startsWith("website") ? !data.websiteConnected : !connectedSocial);
   const reasonOf = (key: keyof OverviewData["totals"]) => (noData(key) ? ("not_connected" as const) : ("no_data" as const));
-  const card = (label: string, key: keyof OverviewData["totals"], opts: { format?: "number" | "percent"; compact?: boolean; info?: string } = {}) => (
+  const card = (label: string, key: keyof OverviewData["totals"], opts: { format?: "number" | "percent"; compact?: boolean; info?: string; featured?: boolean; index?: number } = {}) => (
     <MetricCard
       label={label}
+      featured={opts.featured}
+      index={opts.index}
       value={t[key].value}
       format={opts.format}
       compact={opts.compact}
@@ -111,19 +113,19 @@ function OverviewContent() {
         </p>
       ) : null}
 
-      <section aria-label="Key metrics" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {card("Total Followers", "followers", { compact: true, info: FORMULAS.followers })}
-        {card("Impressions", "impressions", { compact: true, info: "Views/impressions as each platform reports them. YouTube does not provide impressions, so it is excluded." })}
-        {card("Reach", "reach", { compact: true, info: "Unique accounts reached, where the platform provides it." })}
-        {card("Engagement", "engagement", { compact: true, info: "LinkedIn: likes+comments+shares+clicks · Instagram: likes+comments+shares+saves · YouTube: likes+comments+shares." })}
-        {card("Total Clicks", "clicks", { compact: true })}
-        {card("New Followers", "newFollowers", { info: FORMULAS.newFollowers })}
-        {card("Avg Engagement Rate", "engagementRate", { format: "percent", info: "Engagement ÷ impressions across platforms that report both. Instagram is shown on its own page (÷ reach)." })}
-        {card("Website Users", "websiteUsers", { compact: true, info: "Sum of daily active users (a person visiting on several days counts once per day)." })}
-        {card("Sessions", "websiteSessions", { compact: true })}
+      <section aria-label="Key metrics" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {card("Total Followers", "followers", { featured: true, index: 0, compact: true, info: FORMULAS.followers })}
+        {card("Impressions", "impressions", { index: 1, compact: true, info: "Views/impressions as each platform reports them. YouTube does not provide impressions, so it is excluded." })}
+        {card("Reach", "reach", { index: 2, compact: true, info: "Unique accounts reached, where the platform provides it." })}
+        {card("Engagement", "engagement", { index: 3, compact: true, info: "LinkedIn: likes+comments+shares+clicks · Instagram: likes+comments+shares+saves · YouTube: likes+comments+shares." })}
+        {card("Total Clicks", "clicks", { index: 4, compact: true })}
+        {card("New Followers", "newFollowers", { index: 5, info: FORMULAS.newFollowers })}
+        {card("Avg Engagement Rate", "engagementRate", { index: 6, format: "percent", info: "Engagement ÷ impressions across platforms that report both. Instagram is shown on its own page (÷ reach)." })}
+        {card("Website Users", "websiteUsers", { index: 7, compact: true, info: "Sum of daily active users (a person visiting on several days counts once per day)." })}
+        {card("Sessions", "websiteSessions", { index: 8, compact: true })}
       </section>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="rise grid gap-3 md:grid-cols-3" style={{ "--i": 9 } as CSSProperties}>
         <InsightPill label="Highest engagement rate (definitions differ by platform)" value={data.bestPlatform ? `${platformLabel(data.bestPlatform.platform)} (${formatMetric(data.bestPlatform.engagementRate, "percent")} ER)` : "—"} />
         <InsightPill label="Best LinkedIn page" value={data.bestLinkedIn ? `${data.bestLinkedIn.name} (${formatMetric(data.bestLinkedIn.engagementRate, "percent")} ER)` : "—"} />
         <InsightPill label="Top post this period" value={data.topPost ? `${data.topPost.channelName} · ${formatMetric(data.topPost.engagement, "number", true)} eng.` : data.postsLocked ? "Post analytics need Starter" : "—"} />

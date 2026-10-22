@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { KeyRound, LogOut, Monitor, Moon, Sun, UserRound } from "lucide-react";
 import { useSession } from "@/components/providers/auth-provider";
-import { useTheme, type Theme } from "@/components/providers/theme-provider";
+import { ACCENTS, useTheme, type Theme } from "@/components/providers/theme-provider";
 
 const THEMES: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: "system", label: "System", icon: Monitor },
@@ -18,8 +18,26 @@ function roleLabel(role: string) {
 }
 
 function ThemeSwitch() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, accent, setAccent } = useTheme();
   return (
+    <div className="space-y-2">
+    <div role="group" aria-label="Accent colour" className="flex gap-1.5">
+      {ACCENTS.map((a) => (
+        <button
+          key={a.value}
+          type="button"
+          aria-pressed={accent === a.value}
+          onClick={() => setAccent(a.value)}
+          className={clsx(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-full border px-2 py-1.5 text-xs",
+            accent === a.value ? "border-teal-500 bg-accent-tint text-ink" : "border-line text-muted hover:bg-sand-100"
+          )}
+        >
+          <span aria-hidden="true" className="size-3 rounded-full" style={{ background: a.swatch }} />
+          {a.label}
+        </button>
+      ))}
+    </div>
     <div role="group" aria-label="Colour theme" className="flex gap-1">
       {THEMES.map(({ value, label, icon: Icon }) => (
         <button
@@ -28,8 +46,8 @@ function ThemeSwitch() {
           aria-pressed={theme === value}
           onClick={() => setTheme(value)}
           className={clsx(
-            "flex flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-xs",
-            theme === value ? "border-teal-500 bg-teal-500/15 text-teal-600" : "border-line text-muted hover:bg-sand-100"
+            "flex flex-1 items-center justify-center gap-1 rounded-full border px-2 py-1.5 text-xs",
+            theme === value ? "border-teal-500 bg-accent-tint text-ink" : "border-line text-muted hover:bg-sand-100"
           )}
         >
           <Icon size={13} aria-hidden="true" />
@@ -37,31 +55,34 @@ function ThemeSwitch() {
         </button>
       ))}
     </div>
+    </div>
   );
 }
 
-/** Sidebar footer variant (dark background, desktop). */
+/** Sidebar footer: dark promo-style card with the signed-in user and the account actions. */
 export function SidebarUser() {
   const { user, signOut } = useSession();
   if (!user) return null;
   return (
-    <div className="hidden border-t border-white/10 px-4 py-4 lg:block">
-      <div className="flex items-center gap-3">
-        <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-teal-500/20 text-teal-400">
-          <UserRound size={18} />
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white" title={user.email}>{user.email}</p>
-          <p className="text-xs text-white/60">{roleLabel(user.role)}</p>
+    <div className="hidden p-4 lg:block">
+      <div className="promo-card p-4">
+        <div className="flex items-center gap-3">
+          <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
+            <UserRound size={18} />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-white" title={user.email}>{user.email}</p>
+            <p className="text-xs text-white/70">{roleLabel(user.role)}</p>
+          </div>
         </div>
-      </div>
-      <div className="mt-3 flex gap-2">
-        <Link href="/account" className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-white/15 px-2 py-1.5 text-xs text-white/80 hover:bg-white/10">
-          <KeyRound size={13} aria-hidden="true" /> Account
-        </Link>
-        <button type="button" onClick={() => void signOut()} className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-white/15 px-2 py-1.5 text-xs text-white/80 hover:bg-white/10">
-          <LogOut size={13} aria-hidden="true" /> Sign out
-        </button>
+        <div className="mt-3 flex gap-2">
+          <Link href="/account" className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-white px-2 py-1.5 text-xs font-medium text-[#0e2a1d] hover:bg-white/90">
+            <KeyRound size={13} aria-hidden="true" /> Account
+          </Link>
+          <button type="button" onClick={() => void signOut()} className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/30 px-2 py-1.5 text-xs text-white hover:bg-white/10">
+            <LogOut size={13} aria-hidden="true" /> Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

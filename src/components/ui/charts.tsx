@@ -160,7 +160,7 @@ export function SimpleBarChart({
           <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => formatMetric(typeof v === "number" ? v : null)} />
           <Legend />
           {bars.map((b) => (
-            <Bar key={b.key} dataKey={b.key} name={b.name ?? b.key} fill={b.color} radius={[4, 4, 0, 0]} />
+            <Bar key={b.key} dataKey={b.key} name={b.name ?? b.key} fill={b.color} radius={[8, 8, 0, 0]} />
           ))}
         </BarChart>
       </ResponsiveContainer>

@@ -22,7 +22,7 @@ export function AppShell({
   hideRange?: boolean;
 }) {
   return (
-    <div className="app-stage flex min-h-screen flex-col lg:flex-row">
+    <div className="app-stage flex min-h-screen flex-col lg:flex-row lg:items-start">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="glass-header sticky top-0 z-20 backdrop-blur-xl">
@@ -30,7 +30,7 @@ export function AppShell({
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h1 className="font-display text-2xl text-navy-900">{title}</h1>
+                  <h1 className="text-3xl text-navy-900">{title}</h1>
                   {subtitle ? <p className="mt-0.5 text-sm text-muted">{subtitle}</p> : null}
                 </div>
                 <UserMenu />
@@ -40,7 +40,7 @@ export function AppShell({
             {hideRange ? null : <DateRangePicker />}
           </div>
         </header>
-        <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-6 py-6 max-lg:px-4">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-6 pt-2 pb-10 max-lg:px-4">
           {children}
         </main>
       </div>

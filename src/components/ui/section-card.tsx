@@ -12,10 +12,10 @@ export function SectionCard({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="crazy-card min-w-0 rounded-xl border border-white/50 p-5">
+    <section className="crazy-card rise min-w-0 p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg text-navy-900">{title}</h2>
+          <h2 className="text-lg text-navy-900">{title}</h2>
           {subtitle ? <p className="mt-0.5 text-sm text-muted">{subtitle}</p> : null}
         </div>
         {action}
@@ -33,7 +33,7 @@ export function InsightPill({
   value: string;
 }) {
   return (
-    <div className="rounded-md border border-line bg-sand-50/70 px-4 py-3 backdrop-blur-sm">
+    <div className="rounded-2xl border border-line bg-surface px-4 py-3">
       <p className="text-[11px] font-semibold tracking-[0.08em] text-muted uppercase">
         {label}
       </p>

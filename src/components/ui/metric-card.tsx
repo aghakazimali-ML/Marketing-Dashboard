@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Info, Minus } from "lucide-react";
 import clsx from "clsx";
+import type { CSSProperties } from "react";
 import { formatMetric, type MetricFormat } from "@/lib/metrics/format";
 import { nullReasonText, type NullReason } from "@/lib/metrics/catalog";
 
@@ -18,6 +19,8 @@ export function MetricCard({
   platformLabel,
   info,
   includes,
+  featured,
+  index = 0,
 }: {
   label: string;
   value: number | null | undefined;
@@ -31,15 +34,19 @@ export function MetricCard({
   info?: string;
   /** Platforms contributing to a cross-platform total. */
   includes?: string[];
+  /** Solid accent card: used for the single headline KPI on a page. */
+  featured?: boolean;
+  /** Position in the grid, used to stagger the entrance animation. */
+  index?: number;
 }) {
   const empty = value === null || value === undefined;
   const display = formatMetric(value, format, compact);
   const reasonText = nullReasonText(reason, platformLabel);
 
   return (
-    <div className="crazy-card rounded-xl border border-white/50 p-4">
+    <div className={clsx("crazy-card hover-lift rise p-5", featured && "card-featured")} style={{ "--i": index } as CSSProperties}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-semibold tracking-[0.08em] text-muted uppercase">{label}</p>
+        <p className={clsx("text-sm font-medium", featured ? "text-white/85" : "text-muted")}>{label}</p>
         {info ? (
           <span title={info} className="text-muted">
             <Info size={13} aria-hidden="true" />
@@ -49,13 +56,13 @@ export function MetricCard({
       </div>
       <div className="mt-2 flex items-end justify-between gap-2">
         <p
-          className={clsx("font-display text-2xl tabular-nums", empty ? "text-muted" : "text-navy-900")}
+          className={clsx("text-4xl font-semibold tracking-tight tabular-nums", empty ? "text-muted" : featured ? "text-white" : "text-navy-900")}
           title={empty ? reasonText : undefined}
         >
           {display}
           {empty ? <span className="sr-only"> — {reasonText}</span> : null}
         </p>
-        {!empty && delta !== undefined ? <DeltaBadge delta={delta} /> : null}
+        {!empty && delta !== undefined ? <DeltaBadge delta={delta} onDark={featured} /> : null}
       </div>
       {empty ? <p className="mt-2 text-xs text-muted">{reasonText}</p> : null}
       {hint ? <p className="mt-2 text-xs text-muted">{hint}</p> : null}
@@ -67,7 +74,7 @@ export function MetricCard({
 }
 
 /** Arrow + sign + text, so the meaning never depends on colour alone. */
-export function DeltaBadge({ delta }: { delta: number | null }) {
+export function DeltaBadge({ delta, onDark }: { delta: number | null; onDark?: boolean }) {
   if (delta === null) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted" title="No comparable previous period">
@@ -81,7 +88,7 @@ export function DeltaBadge({ delta }: { delta: number | null }) {
   const Icon = flat ? Minus : up ? ArrowUpRight : ArrowDownRight;
   return (
     <span
-      className={clsx("inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums", flat ? "text-muted" : up ? "text-up" : "text-down")}
+      className={clsx("inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums", onDark ? "bg-white/15 text-white" : flat ? "bg-sand-100 text-muted" : up ? "bg-accent-tint text-up" : "bg-down/10 text-down")}
       title="Change vs the previous period of equal length"
     >
       <Icon size={13} aria-hidden="true" />
