@@ -78,17 +78,17 @@ function SyncContent() {
       {isAdmin ? (
         <SectionCard title="Fetch data" subtitle="Fetch connected channels now. Re-fetching never double counts: each day is stored once and overwritten.">
           <div className="flex flex-wrap items-center gap-3">
-            <button type="button" disabled={fetching} onClick={() => void fetchAll()} className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50">
+            <button type="button" disabled={fetching} onClick={() => void fetchAll()} className="rounded-full bg-teal-600 px-5 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50">
               {fetching ? "Fetching all platforms…" : "Fetch All Data"}
             </button>
             {connections.map((c) => (
-              <button key={c.platform} type="button" disabled={fetching || c.pageCount === 0} onClick={() => void fetchPlatform(c.platform)} className="rounded-md border border-line bg-card px-3 py-2 text-sm font-medium hover:bg-sand-100 disabled:opacity-50">
+              <button key={c.platform} type="button" disabled={fetching || c.pageCount === 0} onClick={() => void fetchPlatform(c.platform)} className="rounded-full border border-line bg-card px-3 py-2 text-sm font-medium hover:bg-sand-100 disabled:opacity-50">
                 Fetch {c.label}
               </button>
             ))}
           </div>
-          {lastSummary ? <pre aria-live="polite" className="mt-4 whitespace-pre-wrap rounded-md bg-sand-100 p-3 text-xs text-ink">{lastSummary}</pre> : null}
-          <div className="mt-5 rounded-md border border-line bg-sand-50 p-3 text-xs text-muted">
+          {lastSummary ? <pre aria-live="polite" className="mt-4 whitespace-pre-wrap rounded-2xl bg-sand-100 p-3 text-xs text-ink">{lastSummary}</pre> : null}
+          <div className="mt-5 rounded-2xl border border-line bg-sand-50 p-3 text-xs text-muted">
             <p className="font-semibold text-navy-900">Automatic daily fetch {has("scheduledFetch") ? "" : "(Starter plan and above)"}</p>
             <p className="mt-1">Call this once a day from cron or your scheduler (keep <code>CRON_SECRET</code> private):</p>
             <pre className="mt-2 overflow-x-auto rounded bg-surface p-2 font-mono text-[11px] text-ink">{`curl -X POST -H "x-cron-secret: $CRON_SECRET" $APP_BASE_URL/api/cron/sync`}</pre>
