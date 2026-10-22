@@ -7,7 +7,7 @@ export function LegalPage({ title, intro, children }: { title: string; intro: st
   const info = getLegalInfo();
   return (
     <div className="app-stage min-h-screen px-4 py-10">
-      <main id="main" className="crazy-card mx-auto w-full max-w-3xl rounded-2xl p-6 sm:p-10">
+      <main id="main" className="crazy-card mx-auto w-full max-w-3xl rounded-[28px] p-6 sm:p-10">
         <div className="flex items-center gap-3 text-teal-600">
           <BarChart3 size={28} strokeWidth={1.6} aria-hidden="true" />
           <span className="font-display text-lg text-navy-900">{info.product}</span>

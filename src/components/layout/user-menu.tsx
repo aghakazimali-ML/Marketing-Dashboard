@@ -120,16 +120,16 @@ export function UserMenu() {
         <span className="sr-only">Account menu for {user.email}</span>
       </button>
       {open ? (
-        <div role="menu" className="absolute right-0 z-30 mt-2 w-64 space-y-3 rounded-lg border border-line bg-surface p-3 shadow-xl">
+        <div role="menu" className="absolute right-0 z-30 mt-2 w-64 space-y-3 rounded-2xl border border-line bg-surface p-3 shadow-xl">
           <div>
             <p className="truncate text-sm font-medium text-navy-900" title={user.email}>{user.email}</p>
             <p className="text-xs text-muted">{roleLabel(user.role)}</p>
           </div>
           <ThemeSwitch />
-          <Link role="menuitem" href="/account" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-sand-100">
+          <Link role="menuitem" href="/account" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-xl px-2 py-2 text-sm hover:bg-sand-100">
             <KeyRound size={15} aria-hidden="true" /> Account & password
           </Link>
-          <button role="menuitem" type="button" onClick={() => void signOut()} className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-sand-100">
+          <button role="menuitem" type="button" onClick={() => void signOut()} className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm hover:bg-sand-100">
             <LogOut size={15} aria-hidden="true" /> Sign out
           </button>
         </div>

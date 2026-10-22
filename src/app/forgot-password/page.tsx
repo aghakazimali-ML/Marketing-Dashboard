@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthCard title="Reset your password" subtitle="We will email you a link that works once for 30 minutes">
       {done ? (
-        <p role="status" className="mt-6 rounded-md border border-up/40 bg-up/10 px-3 py-3 text-sm text-up">
+        <p role="status" className="mt-6 rounded-2xl border border-up/40 bg-up/10 px-3 py-3 text-sm text-up">
           If an account exists for that email, a reset link is on its way. Check your inbox.
         </p>
       ) : (

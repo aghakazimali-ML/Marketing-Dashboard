@@ -117,7 +117,7 @@ function OverviewContent() {
       ) : null}
 
       {data.clamped && data.historyDays !== null ? (
-        <p role="status" className="rounded-md border border-line bg-sand-50 px-3 py-2 text-xs text-muted">
+        <p role="status" className="rounded-2xl border border-line bg-sand-50 px-3 py-2 text-xs text-muted">
           Your plan includes {data.historyDays} days of history, so the range was shortened. <a className="font-medium text-teal-600 underline" href="/billing">See plans</a>
         </p>
       ) : null}
@@ -146,7 +146,7 @@ function OverviewContent() {
             <div className="mb-3 flex flex-wrap items-end gap-3">
               <label className="text-xs text-muted">
                 <span className="mb-1 block font-semibold uppercase tracking-wide">Platform</span>
-                <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink">
+                <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="rounded-xl border border-line bg-surface px-2 py-1.5 text-sm text-ink">
                   {PLATFORM_OPTIONS.map((p) => (
                     <option key={p || "all"} value={p}>{p ? platformLabel(p) : "All platforms"}</option>
                   ))}
@@ -154,7 +154,7 @@ function OverviewContent() {
               </label>
               <label className="text-xs text-muted">
                 <span className="mb-1 block font-semibold uppercase tracking-wide">Grain</span>
-                <select value={grain} onChange={(e) => setGrain(e.target.value as typeof grain)} className="rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink">
+                <select value={grain} onChange={(e) => setGrain(e.target.value as typeof grain)} className="rounded-xl border border-line bg-surface px-2 py-1.5 text-sm text-ink">
                   <option value="day">Daily</option>
                   <option value="week">Weekly</option>
                   <option value="month">Monthly</option>

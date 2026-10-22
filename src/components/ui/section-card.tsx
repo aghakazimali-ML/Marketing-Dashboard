@@ -34,7 +34,7 @@ export function InsightPill({
 }) {
   return (
     <div className="rounded-2xl border border-line bg-surface px-4 py-3">
-      <p className="text-[11px] font-semibold tracking-[0.08em] text-muted uppercase">
+      <p className="text-xs font-medium text-muted">
         {label}
       </p>
       <p className="mt-1 text-sm font-semibold text-navy-900">{value}</p>

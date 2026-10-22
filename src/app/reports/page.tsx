@@ -152,7 +152,7 @@ function ReportsContent() {
     { key: "growth", header: "Growth", align: "right", render: (r) => formatMetric(r.growthPct, "percent") },
   ];
 
-  const btn = "rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50";
+  const btn = "rounded-full px-4 py-2 text-sm font-medium disabled:opacity-50";
   const lockedBtn = `${btn} inline-flex items-center gap-1.5 border border-line bg-card text-muted hover:bg-sand-100`;
 
   return (
@@ -165,7 +165,7 @@ function ReportsContent() {
               type="button"
               aria-pressed={range.preset === t.id}
               onClick={() => setPreset(t.id)}
-              className={`rounded-md px-4 py-2 text-sm font-medium ${range.preset === t.id ? "bg-navy-900 text-on-accent" : "border border-line bg-card text-navy-900 hover:bg-sand-100"}`}
+              className={`rounded-full px-4 py-2 text-sm font-medium ${range.preset === t.id ? "bg-navy-900 text-on-accent" : "border border-line bg-card text-navy-900 hover:bg-sand-100"}`}
             >
               {t.label}
             </button>

@@ -70,7 +70,7 @@ function LinkedInContent() {
   return (
     <div className="space-y-6">
       {reconnect.length ? (
-        <div role="alert" className="rounded-lg border border-warn/50 bg-warn/10 px-4 py-3 text-sm text-warn">
+        <div role="alert" className="rounded-2xl border border-warn/50 bg-warn/10 px-4 py-3 text-sm text-warn">
           {reconnect.map((r) => r.name).join(", ")} needs to be reconnected. <Link href="/sync" className="font-medium underline">Reconnect</Link>
         </div>
       ) : null}
@@ -80,7 +80,7 @@ function LinkedInContent() {
           <MetricCard label="Fastest growing" value={fastest?.newFollowers ?? null} format="signed" hint={fastest?.name} info={FORMULAS.newFollowers} />
           <MetricCard label="Most impressions" value={mostImp?.impressions ?? null} compact hint={mostImp?.name} />
         </div>
-        <Link href={`/linkedin/battleboard${search}`} className="rounded-md bg-navy-900 px-4 py-2.5 text-sm font-medium text-on-accent hover:opacity-90">
+        <Link href={`/linkedin/battleboard${search}`} className="rounded-full bg-navy-900 px-4 py-2.5 text-sm font-medium text-on-accent hover:opacity-90">
           Open Battleboard →
         </Link>
       </div>

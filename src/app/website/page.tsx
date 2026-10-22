@@ -59,12 +59,12 @@ function WebsiteContent() {
   return (
     <div className="space-y-6">
       <section aria-label="Website key metrics" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Users" value={w.users} compact delta={d("users")} reason={reason} info="Source: GA4 activeUsers, summed over days (a person visiting on several days counts once per day)." />
-        <MetricCard label="Sessions" value={w.sessions} compact delta={d("sessions")} reason={reason} info="Source: GA4 sessions." />
-        <MetricCard label="New Users" value={w.newUsers} compact delta={d("newUsers")} reason={reason} info="Source: GA4 newUsers." />
-        <MetricCard label="Bounce Rate" value={w.bounceRate} format="percent" delta={d("bounceRate")} reason={reason} info="Source: GA4 bounceRate. Weighted by sessions across days." />
-        <MetricCard label="Avg Session Duration" value={w.avgSessionDurationSec} format="duration" delta={d("avgSessionDurationSec")} reason={reason} info="Source: GA4 averageSessionDuration. Weighted by sessions." />
-        <MetricCard label="Key Events" value={w.conversions} delta={d("conversions")} reason={reason} info="Source: GA4 keyEvents (formerly “conversions”)." />
+        <MetricCard featured index={0} label="Users" value={w.users} compact delta={d("users")} reason={reason} info="Source: GA4 activeUsers, summed over days (a person visiting on several days counts once per day)." />
+        <MetricCard index={1} label="Sessions" value={w.sessions} compact delta={d("sessions")} reason={reason} info="Source: GA4 sessions." />
+        <MetricCard index={2} label="New Users" value={w.newUsers} compact delta={d("newUsers")} reason={reason} info="Source: GA4 newUsers." />
+        <MetricCard index={3} label="Bounce Rate" value={w.bounceRate} format="percent" delta={d("bounceRate")} reason={reason} info="Source: GA4 bounceRate. Weighted by sessions across days." />
+        <MetricCard index={4} label="Avg Session Duration" value={w.avgSessionDurationSec} format="duration" delta={d("avgSessionDurationSec")} reason={reason} info="Source: GA4 averageSessionDuration. Weighted by sessions." />
+        <MetricCard index={5} label="Key Events" value={w.conversions} delta={d("conversions")} reason={reason} info="Source: GA4 keyEvents (formerly “conversions”)." />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">

@@ -22,7 +22,7 @@ export function FetchAllButton() {
           onClick={() => void fetchAll()}
           disabled={fetching}
           className={clsx(
-            "inline-flex items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-on-accent shadow-sm transition",
+            "inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-on-accent shadow-sm transition",
             "hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
           )}
         >
