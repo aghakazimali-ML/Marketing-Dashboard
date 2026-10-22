@@ -71,7 +71,7 @@ function WebsiteContent() {
         <SectionCard title="Traffic sources" subtitle="Default channel group of each session">
           {w.trafficSources.length ? (
             <>
-              <SimpleBarChart data={w.trafficSources.map((s) => ({ ...s }))} xKey="source" bars={[{ key: "sessions", color: "var(--chart-2)", name: "Sessions" }]} />
+              <SimpleBarChart data={w.trafficSources.map((s) => ({ ...s }))} xKey="source" bars={[{ key: "sessions", color: "var(--chart-1)", name: "Sessions" }]} />
               <div className="mt-4">
                 <DataTable columns={sourceCols} rows={w.trafficSources} rowKey={(r) => r.source} caption="Traffic sources" />
               </div>
