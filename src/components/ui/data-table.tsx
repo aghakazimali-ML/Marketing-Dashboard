@@ -83,7 +83,7 @@ export function DataTable<T>({
                   scope="col"
                   aria-sort={col.sortable ? (active ? (sortDir === "desc" ? "descending" : "ascending") : "none") : undefined}
                   className={clsx(
-                    "px-3 py-3 text-[11px] font-semibold tracking-[0.06em] text-muted uppercase whitespace-nowrap",
+                    "px-4 py-3 text-xs font-medium text-muted whitespace-nowrap",
                     col.align === "right" && "text-right",
                     col.align === "center" && "text-center",
                     col.className
@@ -93,7 +93,7 @@ export function DataTable<T>({
                     <button
                       type="button"
                       onClick={() => onSort(col)}
-                      className={clsx("inline-flex items-center gap-1 uppercase hover:text-navy-900", col.align === "right" && "flex-row-reverse")}
+                      className={clsx("inline-flex items-center gap-1 hover:text-navy-900", col.align === "right" && "flex-row-reverse")}
                     >
                       {col.header}
                       {active ? (
@@ -114,12 +114,12 @@ export function DataTable<T>({
           {sorted.map((row) => {
             const id = rowKey(row);
             return (
-              <tr key={id} className={clsx("border-t border-line/80", bestId === id && "bg-teal-500/10")}>
+              <tr key={id} className={clsx("border-t border-line/80", bestId === id && "bg-accent-tint")}>
                 {columns.map((col, ci) => (
                   <td
                     key={col.key}
                     className={clsx(
-                      "px-3 py-3 whitespace-nowrap tabular-nums",
+                      "px-4 py-3 whitespace-nowrap tabular-nums",
                       col.align === "right" && "text-right",
                       col.align === "center" && "text-center",
                       col.className

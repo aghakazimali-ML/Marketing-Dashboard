@@ -19,7 +19,7 @@ export function UpgradePrompt({ feature, description }: { feature: FeatureKey; d
       <p className="max-w-md text-sm text-muted">
         {description ?? `Upgrade to ${needed.name} (from ${formatMoney(planPrice(needed.id, "month", currency), currency)}/month) to unlock ${FEATURE_LABELS[feature].toLowerCase()}.`}
       </p>
-      <Link href="/billing" className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-on-accent hover:bg-teal-500">
+      <Link href="/billing" className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-on-accent hover:bg-teal-500">
         See plans
       </Link>
     </div>

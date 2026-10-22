@@ -102,7 +102,7 @@ function SyncContent() {
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {connections.map((c) => (
-              <div key={c.platform} className="rounded-lg border border-line bg-sand-50 p-4">
+              <div key={c.platform} className="rounded-2xl border border-line bg-sand-50 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold text-navy-900">{c.label}</p>
                   <span className={clsx("rounded px-2 py-0.5 text-[11px] font-semibold uppercase", c.needsReconnect ? "bg-warn/15 text-warn" : c.connected ? "bg-up/10 text-up" : "bg-sand-100 text-muted")}>

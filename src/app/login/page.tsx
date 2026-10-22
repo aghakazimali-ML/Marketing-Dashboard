@@ -49,10 +49,10 @@ function LoginForm() {
   return (
     <AuthCard subtitle="Sign in to access your workspace">
       {reason === "expired" ? (
-        <p role="status" className="mt-4 rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">Your session expired. Please sign in again.</p>
+        <p role="status" className="mt-4 rounded-2xl border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">Your session expired. Please sign in again.</p>
       ) : null}
-      {reason === "signed_out" ? <p role="status" className="mt-4 rounded-md border border-line bg-sand-50 px-3 py-2 text-sm text-muted">You have been signed out.</p> : null}
-      {reason === "password_reset" ? <p role="status" className="mt-4 rounded-md border border-up/40 bg-up/10 px-3 py-2 text-sm text-up">Password updated. Sign in with your new password.</p> : null}
+      {reason === "signed_out" ? <p role="status" className="mt-4 rounded-2xl border border-line bg-sand-50 px-3 py-2 text-sm text-muted">You have been signed out.</p> : null}
+      {reason === "password_reset" ? <p role="status" className="mt-4 rounded-2xl border border-up/40 bg-up/10 px-3 py-2 text-sm text-up">Password updated. Sign in with your new password.</p> : null}
       <form onSubmit={onSubmit} className="mt-2">
         <TextField label="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
         <TextField label="Password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />

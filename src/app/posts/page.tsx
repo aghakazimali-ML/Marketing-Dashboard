@@ -49,7 +49,7 @@ function PostsContent() {
   if (platform) extra.platform = platform;
   const { data, loading, error, retry } = useRangeFetch<{ posts: Post[] }>("/api/posts", extra);
 
-  const select = "rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink";
+  const select = "rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink";
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-3">

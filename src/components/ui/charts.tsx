@@ -67,7 +67,7 @@ function ChartFrame({
           onClick={() => setAsTable((v) => !v)}
           aria-pressed={asTable}
           aria-controls={tableId}
-          className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-navy-900 hover:bg-sand-100"
+          className="shrink-0 rounded-full border border-line px-2 py-1 text-xs font-medium text-navy-900 hover:bg-sand-100"
         >
           {asTable ? "View as chart" : "View as table"}
         </button>

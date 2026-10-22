@@ -75,7 +75,7 @@ export function EmptyState({
       <p className="font-display text-lg text-navy-900">{title}</p>
       {body ? <p className="max-w-md text-sm text-muted">{body}</p> : null}
       {action ? (
-        <Link href={action.href} className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-on-accent hover:bg-teal-500">
+        <Link href={action.href} className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-on-accent hover:bg-teal-500">
           {action.label}
         </Link>
       ) : null}
@@ -85,11 +85,11 @@ export function EmptyState({
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-down/40 bg-down/5 px-4 py-3 text-sm text-down">
+    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl border border-down/40 bg-down/5 px-4 py-3 text-sm text-down">
       <AlertTriangle size={18} aria-hidden="true" className="shrink-0" />
       <p className="min-w-0 flex-1">{message}</p>
       {onRetry ? (
-        <button type="button" onClick={onRetry} className="inline-flex items-center gap-1.5 rounded-md border border-down/40 px-3 py-1.5 font-medium hover:bg-down/10">
+        <button type="button" onClick={onRetry} className="inline-flex items-center gap-1.5 rounded-full border border-down/40 px-3 py-1.5 font-medium hover:bg-down/10">
           <RefreshCw size={14} aria-hidden="true" /> Retry
         </button>
       ) : null}

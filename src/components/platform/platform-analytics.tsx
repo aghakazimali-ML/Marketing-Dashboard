@@ -134,22 +134,24 @@ export function PlatformAnalytics({
     <div className="space-y-6">
       <p className="sr-only">{title} — {subtitle}</p>
       {needsReconnect.length ? (
-        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-warn/50 bg-warn/10 px-4 py-3 text-sm text-warn">
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl border border-warn/50 bg-warn/10 px-4 py-3 text-sm text-warn">
           <span className="min-w-0 flex-1">
             {needsReconnect.map((r) => r.name).join(", ")} needs to be reconnected, so recent data may be missing.
           </span>
-          <Link href="/sync" className="rounded-md border border-warn/50 px-3 py-1.5 font-medium hover:bg-warn/10">Reconnect</Link>
+          <Link href="/sync" className="rounded-full border border-warn/50 px-3 py-1.5 font-medium hover:bg-warn/10">Reconnect</Link>
         </div>
       ) : null}
 
       <section aria-label={`${title} key metrics`} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {CARDS[extraMetrics].map((c) => {
+        {CARDS[extraMetrics].map((c, i) => {
           const value = aggregateMetric(platform, rows, c.key);
           const provided = isMetricProvided(platform, c.key);
           const delta = previousRows ? deltaPct(value, aggregateMetric(platform, previousRows, c.key)) : undefined;
           return (
             <MetricCard
               key={c.key}
+              featured={i === 0}
+              index={i}
               label={c.label}
               value={provided ? value : null}
               format={c.format}
@@ -196,7 +198,7 @@ function PostMiniTable({ posts, showViews, emptyText }: { posts: PostJson[]; sho
   return (
     <ul className="space-y-3">
       {posts.map((p) => (
-        <li key={p.id} className="flex gap-3 rounded-md border border-line p-3">
+        <li key={p.id} className="flex gap-3 rounded-2xl border border-line p-3">
           <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded bg-sand-100">
             {p.thumbnailUrl ? (
               // eslint-disable-next-line @next/next/no-img-element

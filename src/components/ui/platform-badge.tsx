@@ -16,7 +16,7 @@ export function platformLabel(platform: string) {
 export function PlatformBadge({ platform, className }: { platform: string; className?: string }) {
   const m = META[platform];
   return (
-    <span className={clsx("inline-flex items-center gap-1.5 rounded border border-line bg-surface px-2 py-0.5 text-[11px] font-semibold text-navy-900", className)}>
+    <span className={clsx("inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-0.5 text-[11px] font-semibold text-navy-900", className)}>
       <span aria-hidden="true" className={clsx("size-2 rounded-full", m?.dot ?? "bg-muted")} />
       {m?.label ?? platform}
     </span>

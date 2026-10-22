@@ -59,7 +59,7 @@ export function DateRangePicker() {
             setError(null);
             setPreset(v as DatePreset);
           }}
-          className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
+          className="rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink"
         >
           {options.map((o) => (
             <option key={o.value} value={o.value}>
@@ -82,7 +82,7 @@ export function DateRangePicker() {
             }}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? "range-error" : undefined}
-            className="rounded-md border border-line bg-surface px-2 py-2 text-sm"
+            className="rounded-xl border border-line bg-surface px-2 py-2 text-sm"
           />
           <span aria-hidden="true" className="text-muted">→</span>
           <label className="sr-only" htmlFor="range-to">End date</label>
@@ -98,7 +98,7 @@ export function DateRangePicker() {
             }}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? "range-error" : undefined}
-            className="rounded-md border border-line bg-surface px-2 py-2 text-sm"
+            className="rounded-xl border border-line bg-surface px-2 py-2 text-sm"
           />
         </div>
       ) : null}

@@ -143,11 +143,11 @@ export function WorkspaceSettings() {
               <button type="submit" className={btn}>Create key</button>
             </form>
             {newKey ? (
-              <div role="status" className="rounded-md border border-up/40 bg-up/10 p-3 text-sm">
+              <div role="status" className="rounded-2xl border border-up/40 bg-up/10 p-3 text-sm">
                 <p className="font-semibold text-up">Copy your key now. It will not be shown again.</p>
                 <div className="mt-2 flex gap-2">
-                  <input readOnly aria-label="New API key" value={newKey} className="w-full rounded-md border border-line bg-surface px-3 py-2 font-mono text-xs" />
-                  <button type="button" onClick={() => void navigator.clipboard.writeText(newKey)} className="inline-flex items-center gap-1 rounded-md border border-line px-3 text-sm"><Copy size={14} aria-hidden="true" /> Copy</button>
+                  <input readOnly aria-label="New API key" value={newKey} className="w-full rounded-xl border border-line bg-surface px-3 py-2 font-mono text-xs" />
+                  <button type="button" onClick={() => void navigator.clipboard.writeText(newKey)} className="inline-flex items-center gap-1 rounded-full border border-line px-3 text-sm"><Copy size={14} aria-hidden="true" /> Copy</button>
                 </div>
               </div>
             ) : null}
@@ -163,7 +163,7 @@ export function WorkspaceSettings() {
               ))}
               {keys.length === 0 ? <li className="py-2 text-sm text-muted">No active keys.</li> : null}
             </ul>
-            <pre className="overflow-x-auto rounded-md bg-sand-100 p-3 text-[11px]">{`curl -H "Authorization: Bearer mdk_…" "$APP_BASE_URL/api/v1/overview?preset=last_30"\ncurl -H "Authorization: Bearer mdk_…" "$APP_BASE_URL/api/v1/channels?preset=last_30"`}</pre>
+            <pre className="overflow-x-auto rounded-2xl bg-sand-100 p-3 text-[11px]">{`curl -H "Authorization: Bearer mdk_…" "$APP_BASE_URL/api/v1/overview?preset=last_30"\ncurl -H "Authorization: Bearer mdk_…" "$APP_BASE_URL/api/v1/channels?preset=last_30"`}</pre>
           </div>
         ) : (
           <Locked text="API access is part of the Exclusive plan." />

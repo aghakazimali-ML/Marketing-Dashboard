@@ -196,7 +196,7 @@ export function PagesManager() {
         </p>
       ) : null}
 
-      <form onSubmit={submit} className="mb-6 space-y-4 rounded-lg border border-line bg-sand-50 p-4">
+      <form onSubmit={submit} className="mb-6 space-y-4 rounded-2xl border border-line bg-sand-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-navy-900">{editingId ? "Edit page" : "Add a new page"}</h3>
           {editingId ? (

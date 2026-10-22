@@ -146,7 +146,7 @@ function InsightsContent() {
                   setModel(AI_PROVIDERS.find((item) => item.value === nextProvider)?.defaultModel ?? "");
                   setSettings(null);
                 }}
-                className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
+                className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink"
               >
                 {AI_PROVIDERS.map((item) => (
                   <option key={item.value} value={item.value}>{item.label}</option>
@@ -160,7 +160,7 @@ function InsightsContent() {
                 maxLength={100}
                 value={model}
                 onChange={(event) => setModel(event.target.value)}
-                className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
+                className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink"
                 placeholder={AI_PROVIDERS.find((item) => item.value === provider)?.defaultModel}
               />
             </label>
@@ -171,7 +171,7 @@ function InsightsContent() {
                 maxLength={500}
                 value={apiKey}
                 onChange={(event) => setApiKey(event.target.value)}
-                className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink"
+                className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink"
                 placeholder={settings?.configured ? "Saved key; leave blank to keep" : "Paste API key"}
                 autoComplete="new-password"
               />
@@ -179,7 +179,7 @@ function InsightsContent() {
             <button
               type="submit"
               disabled={saving || settingsLoading}
-              className="rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50"
+              className="rounded-full bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save settings"}
             </button>
@@ -211,7 +211,7 @@ function InsightsContent() {
           type="button"
           onClick={() => void generateInsights()}
           disabled={generating || settingsLoading || !settings?.configured}
-          className="mt-4 rounded-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 rounded-full bg-teal-600 px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {generating ? "Analyzing selected metrics…" : "Generate insights"}
         </button>
@@ -234,7 +234,7 @@ function InsightsContent() {
           </SectionCard>
           <div className="grid gap-3 lg:grid-cols-2">
             {result.insights.map((insight, index) => (
-              <article key={`${insight.title}-${index}`} className="rounded-md border border-line bg-card p-4">
+              <article key={`${insight.title}-${index}`} className="rounded-2xl border border-line bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="font-display text-lg text-navy-900">{insight.title}</h2>
                   <span className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold uppercase ${insight.priority === "high" ? "bg-down/10 text-down" : insight.priority === "medium" ? "bg-teal-500/10 text-teal-700" : "bg-sand-100 text-muted"}`}>

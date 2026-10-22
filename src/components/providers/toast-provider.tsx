@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={t.id}
               role={t.kind === "error" ? "alert" : "status"}
               className={clsx(
-                "pointer-events-auto flex gap-3 rounded-lg border bg-surface p-3 shadow-lg",
+                "pointer-events-auto flex gap-3 rounded-2xl border bg-surface p-3 shadow-lg",
                 t.kind === "success" && "border-up/40",
                 t.kind === "error" && "border-down/40",
                 t.kind === "info" && "border-line"
