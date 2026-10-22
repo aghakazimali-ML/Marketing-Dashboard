@@ -57,18 +57,17 @@ export function Sidebar() {
   const { has, plan, brandName } = useEntitlements();
 
   return (
-    <aside className="sidebar-glow flex w-64 shrink-0 flex-col text-white max-lg:w-full" aria-label="Primary">
-      <div className="border-b border-white/10 px-5 py-5 max-lg:px-4 max-lg:py-3">
+    <aside className="app-sidebar flex w-64 shrink-0 flex-col max-lg:w-full lg:sticky lg:top-0 lg:h-screen" aria-label="Primary">
+      <div className="px-5 pt-6 pb-2 max-lg:px-4 max-lg:py-3">
         <Link href={`/${search}`} className="flex items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-teal-500/15 text-teal-300">
-            <BarChart3 size={22} strokeWidth={1.8} aria-hidden="true" />
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-teal-600 text-on-accent">
+            <BarChart3 size={20} strokeWidth={2} aria-hidden="true" />
           </span>
-          <span className="min-w-0 truncate font-display text-base font-semibold text-white">{brandName}</span>
+          <span className="min-w-0 truncate text-lg font-semibold tracking-tight text-navy-900">{brandName}</span>
         </Link>
-        <p className="mt-3 text-[11px] font-semibold tracking-[0.12em] text-teal-400 uppercase max-lg:hidden">
+        <p className="mt-4 inline-flex rounded-full bg-accent-tint px-2.5 py-1 text-[11px] font-semibold tracking-wide text-teal-600 uppercase max-lg:hidden">
           {plan.name} plan
         </p>
-        <p className="mt-0.5 text-xs text-white/60 max-lg:hidden">Marketing performance</p>
       </div>
       <nav className="relative flex-1 space-y-0.5 overflow-y-auto px-3 py-4 max-lg:flex max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:overflow-y-hidden max-lg:space-y-0 max-lg:py-2">
         {NAV.filter((item) => !item.adminOnly || user?.role === "ADMIN").map((item) => {
@@ -86,14 +85,14 @@ export function Sidebar() {
               href={`${item.href}${item.noRange ? "" : search}`}
               aria-current={isActive ? "page" : undefined}
               className={clsx(
-                "flex shrink-0 items-center gap-3 whitespace-nowrap rounded-md px-3 py-2.5 text-sm transition-colors",
-                isActive ? "bg-teal-500/20 text-teal-400" : "text-white/75 hover:bg-white/5 hover:text-white"
+                "flex shrink-0 items-center gap-3 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition-colors",
+                isActive ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text,#fff)] shadow-sm" : "text-muted hover:bg-[var(--nav-hover)] hover:text-navy-900"
               )}
             >
               <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
               {item.label}
               {locked ? (
-                <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-white/60" title="Available on a higher plan">
+                <span className="ml-auto inline-flex items-center gap-1 text-[10px] opacity-70" title="Available on a higher plan">
                   <Lock size={11} aria-hidden="true" />
                   <span className="sr-only">Requires a higher plan</span>
                 </span>
