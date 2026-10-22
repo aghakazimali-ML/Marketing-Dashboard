@@ -131,6 +131,7 @@
     --card-line: #1d3329;
     --card-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
     --thead-bg: #132a20;
+    --accent-tint: color-mix(in srgb, var(--accent-400) 22%, var(--surface));
     --nav-active-bg: var(--accent-500);
     --nav-hover: #14291f;
   }
@@ -173,6 +174,7 @@
   --card-line: #1d3329;
   --card-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
   --thead-bg: #132a20;
+  --accent-tint: color-mix(in srgb, var(--accent-400) 22%, var(--surface));
   --nav-active-bg: var(--accent-500);
   --nav-hover: #14291f;
 }
@@ -389,7 +391,7 @@ h3,
   }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .crazy-card,
+  .crazy-card:not(.card-featured),
   .glass-header {
     backdrop-filter: none;
     background: var(--surface);

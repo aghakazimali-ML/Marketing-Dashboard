@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/ui/section-card";
 import { useAuth } from "@/components/providers/auth-provider";
-import { useTheme, type Theme } from "@/components/providers/theme-provider";
+import { ACCENTS, useTheme, type Theme } from "@/components/providers/theme-provider";
 import { useToast } from "@/components/providers/toast-provider";
 import { apiRequest } from "@/lib/client/api";
 
@@ -19,7 +19,7 @@ export default function AccountPage() {
 function AccountContent() {
   const user = useAuth();
   const toast = useToast();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, accent, setAccent } = useTheme();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -87,6 +87,15 @@ function AccountContent() {
             <label key={t} className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-line px-3 py-2 text-sm capitalize">
               <input type="radio" name="theme" checked={theme === t} onChange={() => setTheme(t)} />
               {t}
+            </label>
+          ))}
+        </div>
+        <div role="radiogroup" aria-label="Accent colour" className="mt-3 flex flex-wrap gap-2">
+          {ACCENTS.map((a) => (
+            <label key={a.value} className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-line px-3 py-2 text-sm">
+              <input type="radio" name="accent" checked={accent === a.value} onChange={() => setAccent(a.value)} />
+              <span aria-hidden="true" className="size-3 rounded-full" style={{ background: a.swatch }} />
+              {a.label}
             </label>
           ))}
         </div>
