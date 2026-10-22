@@ -3,8 +3,7 @@
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BarChart3 } from "lucide-react";
-import { DASHBOARD_NAME } from "@/lib/brand";
+import { AuthCard, TextField, primaryButton } from "@/components/ui/auth-card";
 
 type InvitePreview = { email: string; role: "ADMIN" | "ANALYST" };
 
@@ -114,142 +113,70 @@ function SignupForm() {
     }
   }
 
+  const showForm = setupComplete === false || (setupComplete === true && Boolean(invite));
+  const subtitle = showForm
+    ? invite
+      ? `Accept your ${invite.role.toLowerCase()} invitation`
+      : "Create the owner account for this installation"
+    : undefined;
+  const linkClass = "font-semibold text-teal-700 hover:text-teal-600";
+
   return (
-    <div className="app-stage flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="crazy-card w-full max-w-md rounded-2xl p-8">
-        <div className="mb-5 flex justify-center text-teal-600">
-          <BarChart3 size={36} strokeWidth={1.6} aria-hidden="true" />
+    <AuthCard title={showForm ? (invite ? "Accept your invitation" : "Create your account") : "Account setup"} subtitle={subtitle}>
+      {setupComplete === true && !inviteToken ? (
+        <div className="mt-5">
+          <p className="text-sm text-muted">Account setup is complete. Ask an administrator for an invitation link.</p>
+          <Link href="/login" className={`mt-4 inline-block text-sm ${linkClass}`}>Return to sign in</Link>
         </div>
-        <h1 className="font-display text-center text-2xl text-navy-900">
-          {DASHBOARD_NAME}
-        </h1>
-        {setupComplete === true && !inviteToken ? (
-          <div className="mt-5 text-center">
-            <p className="text-sm text-muted">
-              Account setup is complete. Ask an administrator for an invitation link.
+      ) : setupComplete === true && checkingInvite ? (
+        <p className="mt-5 text-sm text-muted">Checking invitation…</p>
+      ) : setupComplete === true && inviteToken && !invite ? (
+        <div className="mt-5">
+          <p className="text-sm text-down">{error || "This invitation link is unavailable."}</p>
+          <Link href="/login" className={`mt-4 inline-block text-sm ${linkClass}`}>Return to sign in</Link>
+        </div>
+      ) : setupComplete === null ? (
+        <p className="mt-5 text-sm text-muted">Checking account setup…</p>
+      ) : (
+        <>
+          {!invite && !setupTokenConfigured ? (
+            <p role="alert" className="mt-4 rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
+              Owner setup is locked. Set <code>SETUP_TOKEN</code> in the server environment and restart, or run <code>npm run create-owner</code>.
             </p>
-            <Link href="/login" className="mt-4 inline-block text-sm font-semibold text-teal-700 hover:text-teal-600">
-              Return to sign in
-            </Link>
-          </div>
-        ) : setupComplete === true && checkingInvite ? (
-          <p className="mt-5 text-center text-sm text-muted">Checking invitation…</p>
-        ) : setupComplete === true && inviteToken && !invite ? (
-          <div className="mt-5 text-center">
-            <p className="text-sm text-down">{error || "This invitation link is unavailable."}</p>
-            <Link href="/login" className="mt-4 inline-block text-sm font-semibold text-teal-700 hover:text-teal-600">
-              Return to sign in
-            </Link>
-          </div>
-        ) : setupComplete === null ? (
-          <p className="mt-5 text-center text-sm text-muted">Checking account setup…</p>
-        ) : (
-          <>
-            <p className="mt-1 text-center text-sm text-muted">
-              {invite
-                ? `Accept your ${invite.role.toLowerCase()} invitation`
-                : "Create the owner account for this installation"}
-            </p>
-            {!invite && !setupTokenConfigured ? (
-              <p role="alert" className="mt-4 rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
-                Owner setup is locked. Set <code>SETUP_TOKEN</code> in the server environment and restart, or run <code>npm run create-owner</code>.
-              </p>
+          ) : null}
+          <form onSubmit={onSubmit} className="mt-2">
+            {!invite ? (
+              <TextField
+                label="Setup token"
+                type="password"
+                required
+                value={setupToken}
+                onChange={(event) => setSetupToken(event.target.value)}
+                autoComplete="off"
+                hint="The SETUP_TOKEN value from your server configuration."
+              />
             ) : null}
-            <form onSubmit={onSubmit} className="mt-6">
-              {!invite ? (
-                <div className="block text-sm">
-                  <label htmlFor="setup-token" className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">Setup token</label>
-                  <input id="setup-token" type="password" required value={setupToken} onChange={(event) => setSetupToken(event.target.value)} autoComplete="off" className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink" />
-                  <p className="mt-1 text-[11px] text-muted">The <code>SETUP_TOKEN</code> value from your server configuration.</p>
-                </div>
-              ) : null}
-              <label className="block text-sm">
-                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">
-                  Name
-                </span>
-                <input
-                  required
-                  minLength={1}
-                  maxLength={80}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-teal-500"
-                  autoComplete="name"
-                />
-              </label>
+            <TextField label="Name" required minLength={1} maxLength={80} value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" />
+            <TextField label="Email" type="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} readOnly={Boolean(invite)} autoComplete="email" />
+            <TextField label="Password" type="password" required minLength={12} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" hint="At least 12 characters." />
+            <TextField label="Confirm password" type="password" required minLength={12} maxLength={128} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" />
 
-              <label className="mt-3 block text-sm">
-                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">
-                  Email
-                </span>
-                <input
-                  type="email"
-                  required
-                  maxLength={254}
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  readOnly={Boolean(invite)}
-                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-teal-500"
-                  autoComplete="email"
-                />
-              </label>
+            {error ? <p role="alert" className="mt-3 text-sm text-down">{error}</p> : null}
 
-              <label className="mt-3 block text-sm">
-                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">
-                  Password
-                </span>
-                <input
-                  type="password"
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-teal-500"
-                  autoComplete="new-password"
-                />
-              </label>
-
-              <label className="mt-3 block text-sm">
-                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-muted uppercase">
-                  Confirm password
-                </span>
-                <input
-                  type="password"
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-teal-500"
-                  autoComplete="new-password"
-                />
-              </label>
-
-              {error ? <p className="mt-3 text-sm text-down">{error}</p> : null}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="mt-6 w-full rounded-md bg-teal-600 py-2.5 text-sm font-semibold text-on-accent hover:bg-teal-500 disabled:opacity-50"
-              >
-                {loading ? "Creating account…" : "Create account"}
-              </button>
-              <p className="mt-3 text-center text-xs text-muted">
-                By creating an account you agree to the{" "}
-                <Link href="/terms" className="font-medium text-teal-700 hover:underline">Terms of Service</Link> and{" "}
-                <Link href="/privacy" className="font-medium text-teal-700 hover:underline">Privacy Policy</Link>.
-              </p>
-            </form>
-            <p className="mt-5 text-center text-sm text-muted">
-              Already set up?{" "}
-              <Link href="/login" className="font-semibold text-teal-700 hover:text-teal-600">
-                Sign in
-              </Link>
+            <button type="submit" disabled={loading} className={primaryButton}>
+              {loading ? "Creating account…" : "Create account"}
+            </button>
+            <p className="mt-3 text-center text-xs text-muted">
+              By creating an account you agree to the{" "}
+              <Link href="/terms" className="font-medium text-teal-700 hover:underline">Terms of Service</Link> and{" "}
+              <Link href="/privacy" className="font-medium text-teal-700 hover:underline">Privacy Policy</Link>.
             </p>
-          </>
-        )}
-      </div>
-    </div>
+          </form>
+          <p className="mt-5 text-center text-sm text-muted">
+            Already set up? <Link href="/login" className={linkClass}>Sign in</Link>
+          </p>
+        </>
+      )}
+    </AuthCard>
   );
 }
