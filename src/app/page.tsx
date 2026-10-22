@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { AppShell } from "@/components/layout/app-shell";
 import { MetricCard } from "@/components/ui/metric-card";
 import { SectionCard, InsightPill } from "@/components/ui/section-card";
-import { TrendChart } from "@/components/ui/charts";
+import { ShareDonut, TrendChart } from "@/components/ui/charts";
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/states";
 import { FirstRunChecklist } from "@/components/ui/first-run";
@@ -43,6 +43,12 @@ type OverviewData = {
   websiteConnected: boolean;
 };
 
+const PLATFORM_COLOR: Record<string, string> = {
+  LINKEDIN: "var(--platform-linkedin)",
+  FACEBOOK: "var(--platform-facebook)",
+  INSTAGRAM: "var(--platform-instagram)",
+  YOUTUBE: "var(--platform-youtube)",
+};
 const PLATFORM_OPTIONS = ["", "LINKEDIN", "FACEBOOK", "INSTAGRAM", "YOUTUBE"];
 type SeriesKey = "impressions" | "engagement" | "followers";
 const SERIES: Record<SeriesKey, { name: string; color: string; dashed?: boolean }> = {
@@ -90,6 +96,9 @@ function OverviewContent() {
   );
 
   const hasAnyValue = data.series.length > 0 || Object.values(t).some((v) => v.value !== null);
+  const engagementShare = data.byPlatform
+    .filter((p) => p.connected && typeof p.engagement === "number" && p.engagement > 0)
+    .map((p) => ({ name: platformLabel(p.platform), value: p.engagement as number, color: PLATFORM_COLOR[p.platform] ?? "var(--chart-1)" }));
   const seriesKeys = (Object.keys(SERIES) as SeriesKey[]).filter((k) => shown[k]);
 
   const platformColumns: Column<OverviewData["byPlatform"][number]>[] = [
@@ -173,7 +182,7 @@ function OverviewContent() {
             )}
           </SectionCard>
         </div>
-        <div className="lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2">
           <SectionCard title="Top post highlight" subtitle="Highest engagement in selected period">
             {data.topPost ? (
               <div className="space-y-3">
@@ -189,6 +198,11 @@ function OverviewContent() {
               <EmptyState title="No posts to show" body={data.postsLocked ? "Post analytics are included from the Starter plan." : "Posts appear after a fetch finds content published in this period."} action={data.postsLocked ? { label: "See plans", href: "/billing" } : undefined} />
             )}
           </SectionCard>
+          {engagementShare.length ? (
+            <SectionCard title="Engagement by platform" subtitle="Share of total engagement in the selected period">
+              <ShareDonut data={engagementShare} totalLabel="Engagement" />
+            </SectionCard>
+          ) : null}
         </div>
       </div>
 
