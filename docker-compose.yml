@@ -23,13 +23,14 @@ services:
     environment:
       DATABASE_URL: postgresql://dashboard:${POSTGRES_PASSWORD}@postgres:5432/dashboard
       TRUST_PROXY: "true"     # the app sits behind your reverse proxy (TLS terminates there)
+      BACKUP_DIR: /backups    # inside the container, backups always go to the mounted host folder below
     depends_on:
       postgres:
         condition: service_healthy
     ports:
       - "127.0.0.1:${APP_PORT:-3000}:3000" # expose only to the reverse proxy on this host (APP_PORT differs per customer)
     volumes:
-      - ${BACKUP_DIR:-./backups}:/backups
+      - ${BACKUP_HOST_DIR:-${BACKUP_DIR:-./backups}}:/backups   # host folder (BACKUP_DIR from older .env files still works)
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
       interval: 30s

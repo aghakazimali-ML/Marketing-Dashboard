@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import { DASHBOARD_NAME } from "@/lib/brand";
+import { getServerUser } from "@/lib/auth/authorization";
 import { Providers } from "@/components/providers/providers";
 import "./globals.css";
 
@@ -20,11 +21,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getServerUser();
   return (
     <html
       lang="en"
@@ -35,7 +37,7 @@ export default function RootLayout({
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <Providers>{children}</Providers>
+        <Providers initialUser={user}>{children}</Providers>
       </body>
     </html>
   );

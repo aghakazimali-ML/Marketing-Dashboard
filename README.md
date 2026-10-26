@@ -98,6 +98,17 @@ Schedule the daily jobs (host cron):
 
 Production refuses to start with weak or missing secrets, a non-PostgreSQL `DATABASE_URL`, or a non-https `APP_BASE_URL`.
 
+## Deploy on Vercel (optional)
+
+Docker is the primary, tested route. Vercel works too, but the app needs a PostgreSQL database that Vercel does not provide, so create one first (Neon, Supabase, RDS, ...).
+
+1. **Database:** create a PostgreSQL database and keep its connection string (use the *pooled* / pgbouncer URL if the provider offers one).
+2. **Migrate once** from your computer against that database: `DATABASE_URL="postgresql://..." npx prisma migrate deploy` (re-run after each update that adds a migration; Vercel builds do not run migrations).
+3. **Import the repo** in Vercel (framework: Next.js; the default `npm run build` is correct) and set the environment variables from `.env.production.example`. Required: `DATABASE_URL`, `AUTH_SECRET`, `SECRETS_ENCRYPTION_KEY`, `CRON_SECRET`, `SETUP_TOKEN`, `APP_BASE_URL` (your `https://` Vercel or custom domain), `TRUST_PROXY=true`, `COMPANY_NAME`, `SUPPORT_EMAIL`. On serverless set `DATABASE_POOL_MAX=1`, so many function instances do not exhaust the database's connections.
+4. **Scheduled fetch and reports:** Vercel Cron only sends GET requests, but `/api/cron/sync` and `/api/cron/reports` accept POST (with `Authorization: Bearer $CRON_SECRET` or `x-cron-secret`). Call them once a day from any scheduler that can POST (GitHub Actions, cron-job.org, a small server).
+5. **Try it with sample data:** from your computer, `DATABASE_URL="postgresql://..." npm run seed-demo` (remove later with `-- --clear`). Do not use demo data for real customers.
+6. **Backups** are your database provider's job on Vercel (point-in-time recovery or scheduled dumps); `npm run backup` needs `pg_dump` on a machine that can reach the database.
+
 ## Scripts
 
 | Command | What it does |
@@ -135,7 +146,7 @@ scrypt passwords (12+ chars) · login rate limits per IP **and** email with a 10
 
 ## Operations
 
-- **Backups:** `npm run backup` → `backups/dashboard-<timestamp>.dump` (`BACKUP_ENCRYPTION_KEY` encrypts, `BACKUP_KEEP=N` prunes). **Restore:** stop the app, `npm run restore -- <file>`, start the app. Also keep `.env`.
+- **Backups:** `npm run backup` → `backups/dashboard-<timestamp>.dump` (`BACKUP_ENCRYPTION_KEY` encrypts, `BACKUP_KEEP=N` prunes). **Restore:** stop the app, `npm run restore -- <file>`, start the app. Also keep `.env`. **With Docker Compose** run `docker compose exec dashboard npm run backup`: it writes to the mounted host folder (`./backups`, or `BACKUP_HOST_DIR`).
 - **Key rotation:** set the new `SECRETS_ENCRYPTION_KEY`, move the old one to `SECRETS_ENCRYPTION_KEY_PREVIOUS`, run `npm run rotate-secrets`, then drop the old key.
 - **Billing with Safepay (Pakistan):** create a merchant account at getsafepay.com, then in the dashboard copy the **API key**, the **v1 secret key** and the **webhook shared secret** into `SAFEPAY_API_KEY`, `SAFEPAY_SECRET_KEY`, `SAFEPAY_WEBHOOK_SECRET`, and register the webhook `https://<your-domain>/api/billing/safepay/webhook`. Keep `SAFEPAY_ENVIRONMENT=sandbox` while testing (no real money moves) and switch to `production` to go live. How it works: an admin picks a plan on *Plan & Billing* → the server computes the PKR price (clients cannot set amounts) → Safepay checkout (cards and the local methods enabled on your Safepay account) → the customer is redirected back and Safepay also calls the webhook; both are signature-verified and whichever arrives first activates the plan **exactly once**. Payments are **prepaid periods** (1 month or 12 months): renewing the same plan stacks onto the remaining time, upgrading credits the unused days, a lower plan can be chosen after the period ends, and when a period ends the workspace falls back to Free (data is kept, paid features lock). Admins are emailed 7 days before expiry (sent by the daily `/api/cron/reports` call) and see a payment history on the billing page. **Before going live, run one sandbox payment and confirm the amount on the Safepay page equals the price shown here;** if it is 100× off, set `SAFEPAY_AMOUNT_UNIT=minor`.
 - **Billing with Lemon Squeezy (international, USD):** create a store at lemonsqueezy.com, create one subscription product per plan with a monthly and a yearly variant priced like the USD table above, then set `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET` and the six `LEMONSQUEEZY_VARIANT_*` ids. Add a webhook to `https://<your-domain>/api/billing/lemonsqueezy/webhook` (signing secret = `LEMONSQUEEZY_WEBHOOK_SECRET`, events listed in `.env.example`). Lemon Squeezy is the merchant of record, so it handles VAT/sales tax and the customer portal (card, invoices, cancel; opened from **Manage subscription**). The app mirrors the subscription state from signed webhooks: active / trial / past-due keep access, a cancelled subscription keeps access until its end date, expired or paused falls back to Free; older or duplicate events are ignored. Use `LEMONSQUEEZY_TEST_MODE=true` with a test-mode key while testing. The app never trusts the browser for prices or variants.

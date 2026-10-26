@@ -7,7 +7,7 @@ import { TeamManager } from "@/components/team/team-manager";
 
 export default function TeamPage() {
   return (
-    <AppShell title="Team & Access" subtitle="Manage company accounts and permissions">
+    <AppShell title="Team & Access" subtitle="Manage company accounts and permissions" hideRange>
       <TeamContent />
     </AppShell>
   );

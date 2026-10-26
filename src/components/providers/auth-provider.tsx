@@ -16,11 +16,12 @@ const AuthContext = createContext<AuthContextValue>({ user: null, loading: true,
 const PUBLIC_PREFIXES = ["/login", "/signup", "/forgot-password", "/reset-password"];
 const REFRESH_EVERY_MS = 10 * 60_000;
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, initialUser = null }: { children: ReactNode; initialUser?: AuthUser | null }) {
   const pathname = usePathname();
   const isPublic = PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(!isPublic);
+  // initialUser comes from the server (root layout), so SSR and the first client render show the same sidebar.
+  const [user, setUser] = useState<AuthUser | null>(initialUser);
+  const [loading, setLoading] = useState(!isPublic && !initialUser);
 
   useEffect(() => {
     if (isPublic) return;
