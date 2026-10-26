@@ -2,13 +2,14 @@
  * Load clearly-labelled DEMO data so a fresh local install shows charts instead of empty screens.
  *   npm run seed-demo            add (or refresh) demo channels with 90 days of metrics
  *   npm run seed-demo -- --clear remove only the demo channels (their metrics are deleted with them)
- * Demo channels are marked with notes = "demo-data" and named "... (demo)". Real channels are never touched.
+ * Demo channels are marked with notes = "demo-data" and named "... (demo)". Real channels are never touched,
+ * and live fetches skip demo channels so the sample data is never overwritten or double-counted.
  * Refuses to run when NODE_ENV=production.
  */
 import "dotenv/config";
 import { prisma } from "../src/lib/db";
+import { DEMO_NOTES as MARK } from "../src/lib/demo";
 
-const MARK = "demo-data";
 const DAYS = 90;
 type Platform = "LINKEDIN" | "FACEBOOK" | "INSTAGRAM" | "YOUTUBE";
 
