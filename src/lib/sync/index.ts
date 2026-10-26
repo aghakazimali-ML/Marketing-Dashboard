@@ -1,3 +1,4 @@
+import { DEMO_NOTES } from "@/lib/demo";
 import { Platform, SyncStatus, type Channel } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { logger, errorFields } from "@/lib/logger";
@@ -132,7 +133,8 @@ export async function runSync(
         data: { platform: p, status: SyncStatus.RUNNING, trigger: opts.trigger ?? "manual" },
       });
       const channels = await prisma.channel.findMany({
-        where: { platform: p, isActive: true, ...(opts.channelId ? { id: opts.channelId } : {}) },
+        // Demo channels (npm run seed-demo) keep their sample data: a live fetch must not overwrite or duplicate it.
+        where: { platform: p, isActive: true, OR: [{ notes: null }, { notes: { not: DEMO_NOTES } }], ...(opts.channelId ? { id: opts.channelId } : {}) },
         orderBy: { name: "asc" },
       });
 

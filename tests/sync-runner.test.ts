@@ -43,6 +43,15 @@ describe("runSync", () => {
     expect(run?.error).not.toContain("secret upstream detail");
   });
 
+  it("never fetches demo channels (so sample data is not overwritten or double-counted)", async () => {
+    await prisma.channel.create({ data: { platform: "LINKEDIN", name: "Demo", externalId: "1", accessToken: encryptSecret("t"), notes: "demo-data" } });
+    const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const [li] = await runSync("LINKEDIN" as never, { trigger: "manual" });
+    expect(li.status).toBe("SKIPPED");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("skips unconfigured channels without writing data", async () => {
     await prisma.channel.create({ data: { platform: "INSTAGRAM", name: "IG" } });
     const [r] = await runSync("INSTAGRAM" as never);
