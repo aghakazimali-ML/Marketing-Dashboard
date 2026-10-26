@@ -98,6 +98,17 @@ Schedule the daily jobs (host cron):
 
 Production refuses to start with weak or missing secrets, a non-PostgreSQL `DATABASE_URL`, or a non-https `APP_BASE_URL`.
 
+## Deploy on Vercel (optional)
+
+Docker is the primary, tested route. Vercel works too, but the app needs a PostgreSQL database that Vercel does not provide, so create one first (Neon, Supabase, RDS, ...).
+
+1. **Database:** create a PostgreSQL database and keep its connection string (use the *pooled* / pgbouncer URL if the provider offers one).
+2. **Migrate once** from your computer against that database: `DATABASE_URL="postgresql://..." npx prisma migrate deploy` (re-run after each update that adds a migration; Vercel builds do not run migrations).
+3. **Import the repo** in Vercel (framework: Next.js; the default `npm run build` is correct) and set the environment variables from `.env.production.example`. Required: `DATABASE_URL`, `AUTH_SECRET`, `SECRETS_ENCRYPTION_KEY`, `CRON_SECRET`, `SETUP_TOKEN`, `APP_BASE_URL` (your `https://` Vercel or custom domain), `TRUST_PROXY=true`, `COMPANY_NAME`, `SUPPORT_EMAIL`. On serverless set `DATABASE_POOL_MAX=1`, so many function instances do not exhaust the database's connections.
+4. **Scheduled fetch and reports:** Vercel Cron only sends GET requests, but `/api/cron/sync` and `/api/cron/reports` accept POST (with `Authorization: Bearer $CRON_SECRET` or `x-cron-secret`). Call them once a day from any scheduler that can POST (GitHub Actions, cron-job.org, a small server).
+5. **Try it with sample data:** from your computer, `DATABASE_URL="postgresql://..." npm run seed-demo` (remove later with `-- --clear`). Do not use demo data for real customers.
+6. **Backups** are your database provider's job on Vercel (point-in-time recovery or scheduled dumps); `npm run backup` needs `pg_dump` on a machine that can reach the database.
+
 ## Scripts
 
 | Command | What it does |
