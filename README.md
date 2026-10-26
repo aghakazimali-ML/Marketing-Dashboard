@@ -109,6 +109,7 @@ Production refuses to start with weak or missing secrets, a non-PostgreSQL `DATA
 | `npm run sync [-- LINKEDIN]` | run a fetch from the CLI |
 | `npm run rotate-secrets` | encrypt plaintext / re-encrypt credentials with the current key |
 | `npm run backup` / `restore -- <file>` | `pg_dump` backup (optionally AES-encrypted) / restore (needs `postgresql-client`) |
+| `npm run seed-demo` / `-- --clear` | load / remove clearly-labelled demo channels with 90 days of sample metrics (local trials only; refuses in production) |
 | `npm run db:clear-data` | wipe analytics, channels, team and AI settings (keeps the owner) |
 
 ## How the numbers work
